@@ -52,6 +52,11 @@ async def explain(session: AsyncSession, fm: FailureMode) -> ExplainOut:
         controls = [f"model: {model.slug if model else '?'} ({mv.version_label if mv else '?'})",
                     f"temperature {exp.temperature}, max tokens {exp.max_tokens}", f"evaluator: {exp.evaluator}",
                     f"problem held fixed: {pair[0]}×{pair[1]}", f"seed {exp.seed}"]
+    elif fm.detector == "evaluator":
+        observed = (f"This answer was incorrect ({d.get('error_type', '?').replace('_', ' ')}): "
+                    f"{fo.response!r} where {fo.expected_answer} was expected.")
+        changed = "None: this is a single incorrect answer assigned to a cluster of similar answers."
+        controls = [f"model: {model.slug if model else '?'}", f"evaluator: {exp.evaluator}"]
     else:
         observed = (f"One run had an unusual value for {', '.join(d.get('features', []))} compared with the other runs of this "
                     f"experiment (flagged by {', '.join(d.get('methods_agreeing', [fm.detector]))}).")
@@ -98,6 +103,11 @@ async def explain(session: AsyncSession, fm: FailureMode) -> ExplainOut:
             ExplainStep(text="Problem-specific effect: the pattern may exist only for this operand pair.",
                         evidence_level="hypothesis"),
         ]
+    elif fm.detector == "evaluator":
+        possible.append(ExplainStep(text="This answer belongs to a group of similar incorrect answers (see its cluster).",
+                                    evidence_level="observation"))
+        alternatives.append(ExplainStep(text="Evaluator artifact: check the raw response against the expected value.",
+                                        evidence_level="hypothesis"))
     else:
         possible.append(ExplainStep(
             text="The run's output differs in length or timing from its peers for an unknown reason.", evidence_level="hypothesis"))

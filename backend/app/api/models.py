@@ -1,10 +1,11 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_adapter
+from app.api.deps import available_adapters, get_adapter
 from app.core.db import get_session
 from app.core.hardware import detect_hardware
 from app.experiments.service import ensure_model_version
@@ -29,7 +30,8 @@ async def _to_out(session: AsyncSession, m: LLMModel, configured_slug: str) -> M
 async def list_models(session: AsyncSession = Depends(get_session),
                       adapter: ModelAdapter = Depends(get_adapter)) -> list[ModelOut]:
     info = adapter.get_model_info()
-    await ensure_model_version(session, info)  # the configured model is always listed
+    for a in available_adapters():  # every model this server can run is listed, even before its first experiment
+        await ensure_model_version(session, a.get_model_info())
     await session.commit()
     models = (await session.execute(select(LLMModel).order_by(LLMModel.slug))).scalars()
     return [await _to_out(session, m, info.slug) for m in models]
@@ -47,3 +49,26 @@ async def get_model(model_id: uuid.UUID, session: AsyncSession = Depends(get_ses
 @router.get("/system/hardware")
 async def hardware() -> dict[str, object]:
     return detect_hardware()
+
+
+class VersionOut(BaseModel):
+    id: uuid.UUID
+    model_id: uuid.UUID
+    model_slug: str
+    display_name: str
+    version_label: str
+    is_mock: bool
+    experiment_count: int
+
+
+@router.get("/model-versions", response_model=list[VersionOut])
+async def model_versions(session: AsyncSession = Depends(get_session)) -> list[VersionOut]:
+    rows = (await session.execute(select(ModelVersion, LLMModel).join(LLMModel, LLMModel.id == ModelVersion.model_id)
+                                  .order_by(LLMModel.slug, ModelVersion.version_label))).all()
+    out = []
+    for mv, m in rows:
+        n = (await session.execute(select(func.count()).select_from(Experiment)
+                                   .where(Experiment.model_version_id == mv.id))).scalar_one()
+        out.append(VersionOut(id=mv.id, model_id=m.id, model_slug=m.slug, display_name=m.display_name,
+                              version_label=mv.version_label, is_mock=m.is_mock, experiment_count=n))
+    return out

@@ -5,6 +5,7 @@ from app.core.db import get_sessionmaker
 from app.experiments.engine import ExperimentEngine, ModelUnavailable
 from app.services.adapters.base import ModelAdapter
 from app.services.adapters.factory import build_adapter
+from app.services.adapters.mock import MOCK_MODELS, MockAdapter
 
 
 @lru_cache
@@ -14,9 +15,19 @@ def get_adapter() -> ModelAdapter:
 
 def adapter_provider(slug: str) -> ModelAdapter:
     adapter = get_adapter()
-    if adapter.get_model_info().slug != slug:
-        raise ModelUnavailable(f"model {slug!r} is not the model this server is configured to run")
-    return adapter
+    if adapter.get_model_info().slug == slug:
+        return adapter
+    if get_settings().is_mock and slug in MOCK_MODELS:  # demo convenience: both mock versions are always runnable
+        return MockAdapter(slug, get_settings().model_context_length)
+    raise ModelUnavailable(f"model {slug!r} is not available on this server")
+
+
+def available_adapters() -> list[ModelAdapter]:
+    out = [get_adapter()]
+    if get_settings().is_mock:
+        out += [MockAdapter(s, get_settings().model_context_length) for s in MOCK_MODELS
+                if s != out[0].get_model_info().slug]
+    return out
 
 
 @lru_cache

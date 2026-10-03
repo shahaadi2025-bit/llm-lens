@@ -4,12 +4,12 @@
 Run controlled experiments on language models treated as black boxes, then trace every metric back to
 the prompts, responses and evaluators behind it.
 
-> **Status: Phase 4 of 9.** Working: model adapters (mock, local Hugging Face, Ollama, OpenAI-compatible), experiment
-> engine (retry, timeout, cancel, resume), deterministic evaluators, statistics (Wilson/bootstrap intervals, effect sizes,
-> Cochran's Q), metrics with evidence traceability, deterministic prompt mutations, a prompt-sensitivity experiment,
-> anomaly detection (paired discordance, IQR, z-score, Isolation Forest), automated controlled follow-up experiments with a
-> documented reproduction rule, "Explain this failure", experiment lineage, charts, dashboard and free public-hosting config.
-> Not built yet: failure clustering, behavioral fingerprints, model comparison, auth, reports, CLI, notebook.
+> **Status: Phase 5 of 9.** Working: model adapters (mock, local Hugging Face, Ollama, OpenAI-compatible), experiment
+> engine, deterministic evaluators, statistics (Wilson/bootstrap/Newcombe intervals, effect sizes, Cochran's Q, McNemar),
+> metrics with evidence traceability, prompt mutations, anomaly detection, controlled follow-ups, "Explain this failure",
+> lineage, failure clustering (TF-IDF by default, sentence embeddings optional), a behavioral fingerprint (8 dimensions,
+> unmeasured ones shown as unmeasured), matched-design model-version comparison, charts, dashboard and free-hosting config.
+> Not built yet: auth, reports, CLI, research notebook, remaining experiment types (so 6 of 8 fingerprint dimensions are empty).
 > The local Hugging Face adapter is written but has not been run against a real model yet.
 
 ## Quick start (local)

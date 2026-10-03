@@ -12,8 +12,8 @@ export function AnomaliesPanel({ experimentId, status }: { experimentId: string;
     onSuccess: (c) => { qc.invalidateQueries({ queryKey: ["experiments"] }); nav(`/experiments/${c.id}`); },
   });
   const paired = data?.filter((f) => f.label === "representation_sensitivity") ?? [];
-  const outliers = data?.filter((f) => f.label !== "representation_sensitivity") ?? [];
-  if (!data || data.length === 0) return null;
+  const outliers = data?.filter((f) => f.label === "statistical_outlier") ?? [];
+  if (!data || paired.length + outliers.length === 0) return null;
   return (
     <section aria-labelledby="anomalies" className="space-y-3">
       <h2 id="anomalies" className="text-xl font-semibold">Potential anomalies</h2>

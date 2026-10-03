@@ -4,10 +4,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_adapter, get_engine
+from app.api.deps import adapter_provider, get_adapter, get_engine
 from app.core.config import Settings, get_settings
 from app.core.db import get_session
-from app.experiments.engine import EngineError, ExperimentEngine
+from app.experiments.engine import EngineError, ExperimentEngine, ModelUnavailable
 from app.experiments.registry import list_experiment_types
 from app.experiments.service import ServiceError, clone_experiment, create_experiment, ensure_model_version
 from app.models import Evaluation, Experiment, ExperimentRun, LLMModel, ModelVersion, Prompt, Response
@@ -115,9 +115,12 @@ async def create(spec: ExperimentCreate, session: AsyncSession = Depends(get_ses
         total = (await session.execute(select(func.count()).select_from(Experiment))).scalar_one()
         if total >= settings.public_max_total_experiments:
             raise HTTPException(429, "The public demo has reached its storage limit. Run LLM Lens locally for more.")
+    if spec.model_slug:
+        try:
+            adapter = adapter_provider(spec.model_slug)
+        except ModelUnavailable as exc:
+            raise HTTPException(409, str(exc)) from exc
     info = adapter.get_model_info()
-    if spec.model_slug and spec.model_slug != info.slug:
-        raise HTTPException(409, f"model {spec.model_slug!r} is not the model this server is configured to run")
     try:
         mv = await ensure_model_version(session, info)
         exp = await create_experiment(session, spec, mv, info, settings)

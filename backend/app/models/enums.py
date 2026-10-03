@@ -37,6 +37,7 @@ class AnomalyStatus(StrEnum):
     REPRODUCED = "reproduced"
     NOT_REPRODUCED = "not_reproduced"
     DISMISSED = "dismissed"
+    OBSERVED_INCORRECT = "observed_incorrect"  # a plain wrong answer assigned to a cluster; not flagged as anomalous
 
 
 class FingerprintDimension(StrEnum):

@@ -22,7 +22,8 @@ async def detect_and_store(session: AsyncSession, experiment_id: uuid.UUID) -> l
     run_ids = [r.run_id for r in rows]
 
     # Keep follow-up verdicts: only replace detections for this experiment's runs, and remember reproduced/not status.
-    old = list((await session.execute(select(FailureMode).where(FailureMode.run_id.in_(run_ids)))).scalars()) if run_ids else []
+    own = FailureMode.label.in_([PAIRED_LABEL, STAT_LABEL])  # clustering rows live alongside and are left alone
+    old = list((await session.execute(select(FailureMode).where(FailureMode.run_id.in_(run_ids), own))).scalars()) if run_ids else []
     previous = {(f.run_id, f.label, f.detector): (f.status, f.details.get("followup_evidence")) for f in old}
     if old:
         await session.execute(delete(FailureMode).where(FailureMode.id.in_([f.id for f in old])))

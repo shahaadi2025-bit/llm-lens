@@ -42,3 +42,13 @@ def bootstrap_mean_interval(values: list[float], level: float = 0.95, n_boot: in
     low, high = np.quantile(means, [alpha, 1 - alpha])
     return Interval(float(arr.mean()), float(low), float(high), len(arr), level,
                     f"bootstrap-percentile-{n_boot}-seed{seed}")
+
+
+def newcombe_difference(k1: int, n1: int, k2: int, n2: int, level: float = 0.95) -> tuple[float, float, float]:
+    """Newcombe hybrid-score interval for p2 - p1 (two independent proportions). Better behaved than the Wald
+    interval for small samples and proportions near 0 or 1. Returns (difference, low, high)."""
+    a, b = wilson_interval(k1, n1, level), wilson_interval(k2, n2, level)
+    d = b.estimate - a.estimate
+    low = d - math.sqrt((a.high - a.estimate) ** 2 + (b.estimate - b.low) ** 2)
+    high = d + math.sqrt((a.estimate - a.low) ** 2 + (b.high - b.estimate) ** 2)
+    return d, max(-1.0, low), min(1.0, high)

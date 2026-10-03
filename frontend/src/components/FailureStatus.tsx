@@ -1,6 +1,6 @@
 const STYLE: Record<string, string> = {
   potential_anomaly: "bg-signal-wash text-signal", reproduced: "bg-lens-wash text-lens-deep",
-  not_reproduced: "bg-bench text-ink-soft", dismissed: "bg-bench text-ink-faint",
+  not_reproduced: "bg-bench text-ink-soft", dismissed: "bg-bench text-ink-faint", observed_incorrect: "bg-bench text-ink-soft",
 };
 /** Amber 'POTENTIAL ANOMALY' on purpose: a flag is a question, never a verdict of model failure. */
 export function FailureStatus({ value }: { value: string }) {

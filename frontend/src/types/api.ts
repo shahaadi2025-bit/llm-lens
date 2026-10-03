@@ -44,7 +44,7 @@ export interface ModelInfo {
   configured: boolean;
 }
 export interface ExperimentCreate {
-  name: string; task_type: string; seed: number; repetitions: number; research_question?: string;
+  name: string; task_type: string; seed: number; repetitions: number; research_question?: string; model_slug?: string;
 }
 
 export interface Metric {
@@ -82,4 +82,37 @@ export interface Explain {
 export interface Lineage {
   nodes: { id: string; name: string; status: string; is_current: boolean; is_demo_data: boolean; anomalies: number }[];
   edges: { parent: string; child: string; relation: string; trigger_run_id: string | null; note: string | null }[];
+}
+
+export interface Cluster {
+  id: string; label: string; size: number; method: string; embedding_model: string | null;
+  error_types: Record<string, number>; forms: Record<string, number>; includes_demo_data: boolean; note: string;
+}
+export interface ClusterDetail extends Cluster { members: Failure[]; }
+export interface DimensionMetric {
+  metric_id: string; experiment_id: string; experiment_name: string; version: string; value: number;
+  ci_low: number | null; ci_high: number | null; n: number;
+}
+export interface Dimension {
+  code: string; name: string; measured: boolean; value: number | null; ci_low: number | null; ci_high: number | null;
+  n: number; n_experiments: number; method: string | null; metrics: DimensionMetric[]; how_measured: string;
+}
+export interface Fingerprint {
+  model_id: string; model_slug: string; display_name: string; version: string | null; includes_demo_data: boolean;
+  dimensions: Dimension[]; notes: string[];
+}
+export interface ModelVersion {
+  id: string; model_id: string; model_slug: string; display_name: string; version_label: string; is_mock: boolean;
+  experiment_count: number;
+}
+export interface Diff {
+  metric: string; dimension: string | null; a_value: number; a_n: number; b_value: number; b_n: number; difference: number;
+  diff_ci_low: number; diff_ci_high: number; cohens_h: number; mcnemar_p: number | null; paired_only_a: number | null;
+  paired_only_b: number | null; statement: string;
+}
+export interface Compare {
+  a_label: string; b_label: string; includes_demo_data: boolean; comparable: boolean;
+  matched: { task_type: string; a: { id: string; name: string }; b: { id: string; name: string } }[];
+  unmatched_a: { id: string; name: string }[]; unmatched_b: { id: string; name: string }[];
+  differences: Diff[]; latency_ms: Record<string, number | null>; notes: string[];
 }

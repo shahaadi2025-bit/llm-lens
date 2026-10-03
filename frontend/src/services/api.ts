@@ -1,5 +1,5 @@
 import type {
-  Analysis, Dashboard, Experiment, Explain, Failure, Lineage, ExperimentCreate, ExperimentDetail, ExperimentType, Health, Metric,
+  Analysis, Cluster, ClusterDetail, Compare, Dashboard, Fingerprint, ModelVersion, Experiment, Explain, Failure, Lineage, ExperimentCreate, ExperimentDetail, ExperimentType, Health, Metric,
   MetricEvidence, ModelInfo,
 } from "../types/api";
 
@@ -47,6 +47,12 @@ async function post<T>(path: string, body?: unknown): Promise<T> {
 export const api = {
   health: () => get<Health>("/health"),
   dashboard: () => get<Dashboard>("/dashboard"),
+  clusters: () => get<Cluster[]>("/failure-clusters"),
+  cluster: (id: string) => get<ClusterDetail>(`/failure-clusters/${id}`),
+  recomputeClusters: () => post<Cluster[]>("/failure-clusters/recompute"),
+  fingerprint: (modelId: string) => get<Fingerprint>(`/fingerprints/${modelId}`),
+  modelVersions: () => get<ModelVersion[]>("/model-versions"),
+  compare: (a: string, b: string) => get<Compare>(`/compare?a=${a}&b=${b}`),
   failures: (experimentId?: string) => get<Failure[]>(`/failures${experimentId ? `?experiment_id=${experimentId}` : ""}`),
   explain: (failureId: string) => get<Explain>(`/failures/${failureId}/explain`),
   lineage: (experimentId: string) => get<Lineage>(`/experiments/${experimentId}/lineage`),

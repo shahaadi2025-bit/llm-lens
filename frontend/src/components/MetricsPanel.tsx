@@ -3,7 +3,7 @@ import { useState } from "react";
 import { api } from "../services/api";
 import { interval, pct } from "../utils/format";
 
-function Evidence({ metricId }: { metricId: string }) {
+export function Evidence({ metricId }: { metricId: string }) {
   const { data, error } = useQuery({ queryKey: ["evidence", metricId], queryFn: () => api.evidence(metricId) });
   if (error) return <p role="alert" className="text-sm text-signal">{(error as Error).message}</p>;
   if (!data) return <p className="text-sm text-ink-soft">Loading evidence…</p>;

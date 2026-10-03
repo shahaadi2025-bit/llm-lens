@@ -98,8 +98,9 @@ async def test_not_found_and_bad_ids(client):
 async def test_models_and_hardware(client):
     exp = await create(client)
     models = (await client.get("/api/models")).json()
-    assert len(models) == 1 and models[0]["configured"] and models[0]["is_mock"]
-    assert models[0]["experiment_count"] == 1
+    assert {m["slug"] for m in models} == {"mock-deterministic-v1", "mock-deterministic-v2"}
+    models = [m for m in models if m["slug"] == "mock-deterministic-v1"]
+    assert models[0]["configured"] and models[0]["is_mock"] and models[0]["experiment_count"] == 1
     one = (await client.get(f"/api/models/{models[0]['id']}")).json()
     assert one["slug"] == models[0]["slug"]
     assert (await client.get(f"/api/models/{uuid.uuid4()}")).status_code == 404

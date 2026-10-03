@@ -46,7 +46,7 @@ async def client(engine):
     adapter = MockAdapter()
     app.dependency_overrides[get_session] = override
     app.dependency_overrides[get_adapter] = lambda: adapter
-    app.state.engine = ExperimentEngine(maker, lambda slug: adapter, retry_backoff_s=0.0)
+    app.state.engine = ExperimentEngine(maker, lambda slug: MockAdapter(slug), retry_backoff_s=0.0)
     app.dependency_overrides[get_engine] = lambda: app.state.engine
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         c.app_engine = app.state.engine  # type: ignore[attr-defined]

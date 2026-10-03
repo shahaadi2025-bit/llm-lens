@@ -53,6 +53,8 @@ class Settings(BaseSettings):
     openai_compat_base_url: str = ""
     openai_compat_api_key: SecretStr | None = None  # optional adapter only; never needed by the core app
 
+    embeddings_backend: Literal["tfidf", "sentence-transformers"] = "tfidf"  # tfidf needs no torch; fits free tiers
+
     request_timeout_s: float = 60.0
     max_concurrency: int = 4
     max_retries: int = 2

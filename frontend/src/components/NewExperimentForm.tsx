@@ -11,11 +11,13 @@ export function NewExperimentForm() {
   const [name, setName] = useState("");
   const [seed, setSeed] = useState(0);
   const [reps, setReps] = useState(1);
+  const [model, setModel] = useState("");
+  const models = useQuery({ queryKey: ["models"], queryFn: api.models });
   const selected = types.data?.find((t) => t.task_type === (taskType || types.data?.[0]?.task_type));
 
   const create = useMutation({
     mutationFn: async () => {
-      const exp = await api.createExperiment({ name, task_type: selected!.task_type, seed, repetitions: reps });
+      const exp = await api.createExperiment({ name, task_type: selected!.task_type, seed, repetitions: reps, model_slug: model || undefined });
       await api.runExperiment(exp.id);
       return exp;
     },
@@ -38,6 +40,14 @@ export function NewExperimentForm() {
         <p className="mt-1 text-ink-soft">{selected.research_question}</p>
         <p className="mt-2 text-ink-soft">{selected.description}</p>
       </div>
+      {models.data && models.data.length > 1 && (
+        <label className="block text-sm">Model
+          <select className={field} value={model} onChange={(e) => setModel(e.target.value)}>
+            <option value="">Server default</option>
+            {models.data.map((m) => <option key={m.id} value={m.slug}>{m.display_name}</option>)}
+          </select>
+        </label>
+      )}
       <label className="block text-sm">Name
         <input required maxLength={200} className={field} value={name} onChange={(e) => setName(e.target.value)} />
       </label>
