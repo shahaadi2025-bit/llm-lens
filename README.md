@@ -4,13 +4,12 @@
 Run controlled experiments on language models treated as black boxes, then trace every metric back to
 the prompts, responses and evaluators behind it.
 
-> **Status: Phase 2 of 9.** Working: model adapters (mock, local Hugging Face, Ollama, OpenAI-compatible),
-> experiment engine (retry, timeout, cancel, resume, concurrency limit), deterministic evaluators, the first
-> experiment type (arithmetic representation sensitivity), persistence, REST API and a basic UI.
-> Not built yet: statistics/CIs, charts, follow-up generation, anomaly detection, clustering, fingerprints,
-> auth, reports, CLI.
+> **Status: Phase 3 of 9.** Working: model adapters (mock, local Hugging Face, Ollama, OpenAI-compatible), experiment
+> engine (retry, timeout, cancel, resume), deterministic evaluators, statistics engine (Wilson and bootstrap intervals,
+> effect sizes, Cochran's Q, McNemar), metrics with evidence traceability (metric -> runs -> prompts -> responses ->
+> evaluations), charts with confidence intervals, a real dashboard, and free public-hosting configuration.
+> Not built yet: follow-up generation, anomaly detection, clustering, fingerprints, auth, reports, CLI.
 > The local Hugging Face adapter is written but has not been run against a real model yet.
-> Nothing in this repository presents mock data as real experimental evidence.
 
 ## Quick start (local)
 ```bash

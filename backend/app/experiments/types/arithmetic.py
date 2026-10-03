@@ -27,7 +27,15 @@ class ArithmeticRepresentation(ExperimentType):
         "about this model on these prompts; it does not identify an internal cause."
     )
     default_evaluator = "numeric_match"
+    fingerprint_dimension = "M"
     default_config: dict[str, Any] = {"n_random_pairs": 4, "representations": list(REPRESENTATIONS)}
+
+    def group_of(self, variant_params: dict[str, Any]) -> str | None:
+        return variant_params.get("representation")
+
+    def block_of(self, variant_params: dict[str, Any]) -> str | None:
+        pair = variant_params.get("pair")
+        return f"{pair[0]}x{pair[1]}#{variant_params.get('repetition', 0)}" if pair else None
 
     def validate_config(self, config: dict[str, Any]) -> dict[str, Any]:
         cfg = {**self.default_config, **config}

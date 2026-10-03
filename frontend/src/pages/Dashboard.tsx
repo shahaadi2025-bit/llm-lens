@@ -1,24 +1,57 @@
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { EmptyState } from "../components/EmptyState";
-import { useHealth } from "../hooks/useHealth";
+import { DemoTag, Status } from "../components/Status";
+import { api } from "../services/api";
+
+function Stat({ label, value, note }: { label: string; value: number; note?: string }) {
+  return (
+    <div className="border-t border-rule pt-3">
+      <dt className="text-sm text-ink-soft">{label}</dt>
+      <dd className="font-display text-4xl font-semibold text-lens-deep">{value}</dd>
+      {note && <p className="mt-1 text-xs text-ink-faint">{note}</p>}
+    </div>
+  );
+}
 
 export function Dashboard() {
-  const { data, error } = useHealth();
+  const { data, error } = useQuery({ queryKey: ["dashboard"], queryFn: api.dashboard });
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <h1 className="text-3xl font-semibold">Dashboard</h1>
       {error && <p role="alert" className="rounded bg-signal-wash p-3 text-sm text-signal">{(error as Error).message}</p>}
       {data && (
-        <dl className="grid gap-x-8 gap-y-3 border-y border-rule py-4 text-sm sm:grid-cols-2">
-          <div><dt className="text-ink-faint">Model provider</dt><dd>{data.model_provider}</dd></div>
-          <div><dt className="text-ink-faint">Model</dt><dd>{data.model_name}</dd></div>
-          <div><dt className="text-ink-faint">Database</dt><dd>{data.database}</dd></div>
-          <div><dt className="text-ink-faint">Version</dt><dd>{data.version} ({data.environment})</dd></div>
-        </dl>
+        <>
+          <dl className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <Stat label="Experiments completed" value={data.experiments_completed} note={`${data.experiments_total} created`} />
+            <Stat label="Models tested" value={data.models_tested} />
+            <Stat label="Potential anomalies" value={data.potential_anomalies} note="Detection arrives in Phase 4" />
+            <Stat label="Failure clusters" value={data.failure_clusters} note="Clustering arrives in Phase 5" />
+          </dl>
+          {data.includes_demo_data && (
+            <p className="rounded bg-demo-wash p-3 text-sm text-demo">
+              <strong>DEMO / MOCK DATA</strong> is included in these counts. It comes from a deterministic mock model and is not evidence about any real LLM.
+            </p>
+          )}
+          <section aria-labelledby="recent">
+            <h2 id="recent" className="mb-2 text-xl font-semibold">Recent experiments</h2>
+            {data.recent.length === 0 ? (
+              <EmptyState title="No experiments yet">Run the first one from the Experiments page.</EmptyState>
+            ) : (
+              <ul className="divide-y divide-rule border-y border-rule">
+                {data.recent.map((e) => (
+                  <li key={e.id} className="py-3">
+                    <Link to={`/experiments/${e.id}`} className="flex flex-wrap items-center gap-2 hover:underline">
+                      <span className="font-medium">{e.name}</span> <Status value={e.status} /> {e.is_demo_data && <DemoTag />}
+                      <span className="text-xs text-ink-faint">{e.counts.passed}/{e.counts.succeeded} correct</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </>
       )}
-      <EmptyState title="No experiments yet">
-        Experiment counts, potential anomalies and failure clusters will appear here once the experiment engine
-        lands (Phase 2) and statistics are wired in (Phase 3). Nothing on this page is placeholder data.
-      </EmptyState>
     </div>
   );
 }

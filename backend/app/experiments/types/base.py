@@ -24,6 +24,15 @@ class ExperimentType(ABC):
     description: str
     default_evaluator: str
     default_config: dict[str, Any]
+    fingerprint_dimension: str | None = None  # R M F C I H T S: which behavioral-fingerprint axis this feeds
+
+    def group_of(self, variant_params: dict[str, Any]) -> str | None:
+        """The form/condition a prompt belongs to (for comparing forms). None = no grouping."""
+        return None
+
+    def block_of(self, variant_params: dict[str, Any]) -> str | None:
+        """The underlying problem instance, shared across forms (enables paired analysis)."""
+        return None
 
     @abstractmethod
     def validate_config(self, config: dict[str, Any]) -> dict[str, Any]:

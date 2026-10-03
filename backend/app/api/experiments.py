@@ -68,6 +68,26 @@ async def _summaries(session: AsyncSession, exps: list[Experiment]) -> list[Expe
     return result
 
 
+async def build_run_outs(session: AsyncSession, runs: list[ExperimentRun]) -> list[RunOut]:
+    """Join runs with their prompt, response and evaluation (the evidence chain, one row per run)."""
+    ids = [r.id for r in runs]
+    prompts = {p.run_id: p for p in (await session.execute(select(Prompt).where(Prompt.run_id.in_(ids)))).scalars()}
+    responses = {r.run_id: r for r in (await session.execute(select(Response).where(Response.run_id.in_(ids)))).scalars()}
+    evals: dict[uuid.UUID, Evaluation] = {}
+    for row in (await session.execute(select(Evaluation).where(Evaluation.run_id.in_(ids)))).scalars():
+        evals[row.run_id] = row
+    out = []
+    for r in runs:
+        pr, resp, ev = prompts[r.id], responses.get(r.id), evals.get(r.id)
+        out.append(RunOut(
+            id=r.id, run_index=r.run_index, variant_label=r.variant_label, variant_params=pr.variant_params,
+            status=r.status, attempt=r.attempt, seed=r.seed, latency_ms=r.latency_ms, prompt_tokens=r.prompt_tokens,
+            completion_tokens=r.completion_tokens, tokens_estimated=bool(resp and resp.raw.get("tokens_estimated")),
+            error=r.error, prompt=pr.text, expected_answer=pr.expected_answer, response=resp.text if resp else None,
+            evaluation=EvaluationOut.model_validate(ev) if ev else None))
+    return out
+
+
 async def _get_or_404(session: AsyncSession, experiment_id: uuid.UUID) -> Experiment:
     exp = await session.get(Experiment, experiment_id)
     if exp is None:
@@ -129,21 +149,7 @@ async def detail(experiment_id: uuid.UUID, session: AsyncSession = Depends(get_s
     summary = (await _summaries(session, [exp]))[0]
     runs = list((await session.execute(select(ExperimentRun).where(ExperimentRun.experiment_id == exp.id)
                                        .order_by(ExperimentRun.run_index))).scalars())
-    ids = [r.id for r in runs]
-    prompts = {p.run_id: p for p in (await session.execute(select(Prompt).where(Prompt.run_id.in_(ids)))).scalars()}
-    responses = {r.run_id: r for r in (await session.execute(select(Response).where(Response.run_id.in_(ids)))).scalars()}
-    evals: dict[uuid.UUID, Evaluation] = {}
-    for row in (await session.execute(select(Evaluation).where(Evaluation.run_id.in_(ids)))).scalars():
-        evals[row.run_id] = row
-    run_out = []
-    for r in runs:
-        pr, resp, ev = prompts[r.id], responses.get(r.id), evals.get(r.id)
-        run_out.append(RunOut(
-            id=r.id, run_index=r.run_index, variant_label=r.variant_label, variant_params=pr.variant_params,
-            status=r.status, attempt=r.attempt, seed=r.seed, latency_ms=r.latency_ms, prompt_tokens=r.prompt_tokens,
-            completion_tokens=r.completion_tokens, tokens_estimated=bool(resp and resp.raw.get("tokens_estimated")),
-            error=r.error, prompt=pr.text, expected_answer=pr.expected_answer, response=resp.text if resp else None,
-            evaluation=EvaluationOut.model_validate(ev) if ev else None))
+    run_out = await build_run_outs(session, runs)
     return ExperimentDetail(**summary.model_dump(), config=exp.config, environment=exp.environment,
                             software_version=exp.software_version, runs=run_out,
                             notice=MOCK_NOTICE if exp.is_demo_data else None)

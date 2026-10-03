@@ -4,6 +4,7 @@ Lifecycle: PENDING -> RUNNING -> COMPLETED | FAILED | CANCELLED. FAILED/CANCELLE
 that did finish, and can be started again: only runs that have not succeeded are re-executed (resume).
 """
 import asyncio
+import logging
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -18,7 +19,9 @@ from app.models import Evaluation, Experiment, ExperimentRun, LLMModel, ModelVer
 from app.models.base import utcnow
 from app.models.enums import ExperimentStatus, RunStatus
 from app.services.adapters.base import GenerationRequest, ModelAdapter
+from app.services.metrics import compute_and_store_metrics
 
+log = logging.getLogger(__name__)
 AdapterProvider = Callable[[str], ModelAdapter]  # model slug -> adapter; raises ModelUnavailable
 
 
@@ -198,3 +201,8 @@ class ExperimentEngine:
                     exp.status = ExperimentStatus.COMPLETED.value
             exp.finished_at = utcnow()
             await s.commit()
+        try:  # analysis must never turn a finished experiment into a failed one
+            async with self._sm() as s:
+                await compute_and_store_metrics(s, experiment_id)
+        except Exception:  # noqa: BLE001
+            log.exception("metric computation failed for %s", experiment_id)

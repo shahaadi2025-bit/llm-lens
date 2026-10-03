@@ -1,5 +1,6 @@
 import type {
-  Experiment, ExperimentCreate, ExperimentDetail, ExperimentType, Health, ModelInfo,
+  Analysis, Dashboard, Experiment, ExperimentCreate, ExperimentDetail, ExperimentType, Health, Metric,
+  MetricEvidence, ModelInfo,
 } from "../types/api";
 
 export class ApiError extends Error {
@@ -45,6 +46,10 @@ async function post<T>(path: string, body?: unknown): Promise<T> {
 
 export const api = {
   health: () => get<Health>("/health"),
+  dashboard: () => get<Dashboard>("/dashboard"),
+  metrics: (id: string) => get<Metric[]>(`/experiments/${id}/metrics`),
+  analysis: (id: string) => get<Analysis>(`/experiments/${id}/analysis`),
+  evidence: (metricId: string) => get<MetricEvidence>(`/metrics/${metricId}/evidence`),
   models: () => get<ModelInfo[]>("/models"),
   experimentTypes: () => get<ExperimentType[]>("/experiment-types"),
   experiments: (status?: string) => get<Experiment[]>(`/experiments${status ? `?status=${status}` : ""}`),

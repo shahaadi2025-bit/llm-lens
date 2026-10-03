@@ -46,3 +46,22 @@ export interface ModelInfo {
 export interface ExperimentCreate {
   name: string; task_type: string; seed: number; repetitions: number; research_question?: string;
 }
+
+export interface Metric {
+  id: string; experiment_id: string; name: string; dimension: string | null; value: number;
+  ci_low: number | null; ci_high: number | null; ci_level: number; n: number; method: string;
+  evidence_runs: number; is_demo_data: boolean;
+}
+export interface MetricEvidence { metric: Metric; runs: Run[]; }
+export interface GroupStat { group: string; accuracy: number; ci_low: number; ci_high: number; n: number; }
+export interface Statement { text: string; evidence_level: string; }
+export interface Analysis {
+  experiment_id: string; is_demo_data: boolean; method: string; groups: GroupStat[]; n_blocks: number;
+  cochran_q: number | null; cochran_df: number | null; cochran_p: number | null; best: string | null;
+  worst: string | null; spread: number | null; cohens_h: number | null; statements: Statement[];
+  limitations: string[];
+}
+export interface Dashboard {
+  experiments_total: number; experiments_completed: number; models_tested: number; potential_anomalies: number;
+  failure_clusters: number; recent: Experiment[]; includes_demo_data: boolean; notes: string[];
+}

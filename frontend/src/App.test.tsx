@@ -28,7 +28,7 @@ test("home renders the evidence ladder and the four primary actions", () => {
 
 test("mock mode shows the DEMO / MOCK DATA banner", async () => {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => health }));
-  renderAt("/dashboard");
+  renderAt("/");
   await waitFor(() => expect(screen.getByText(/DEMO \/ MOCK DATA/)).toBeInTheDocument());
 });
 

@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
+import { AnalysisPanel } from "../components/AnalysisPanel";
+import { MetricsPanel } from "../components/MetricsPanel";
 import { DemoTag, Status } from "../components/Status";
 import { api } from "../services/api";
 
@@ -50,11 +52,19 @@ export function ExperimentDetail() {
         </dl>
       </section>
 
+      {d.counts.succeeded > 0 && (
+        <section aria-labelledby="metrics">
+          <h2 id="metrics" className="mb-2 text-xl font-semibold">Metrics</h2>
+          <MetricsPanel experimentId={d.id} status={d.status} />
+        </section>
+      )}
+      {d.counts.succeeded > 0 && d.status !== "running" && <AnalysisPanel experimentId={d.id} status={d.status} />}
+
       <section aria-labelledby="runs">
         <h2 id="runs" className="mb-1 text-xl font-semibold">Runs</h2>
         <p className="mb-3 text-sm text-ink-soft">
           {d.counts.succeeded} of {d.counts.total} finished; {d.counts.passed} judged correct by the deterministic evaluator.
-          Raw counts only: confidence intervals arrive with the statistics engine.
+          Intervals and evidence links are in Metrics above.
         </p>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[40rem] text-left text-sm">
