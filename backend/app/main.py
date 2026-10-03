@@ -30,6 +30,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     if settings.public_demo_mode:
         app.add_middleware(RateLimitMiddleware, limit_per_minute=settings.public_rate_limit_per_minute)
+    # Login/register are always throttled (any mode): this is the brute-force defence.
+    app.add_middleware(RateLimitMiddleware, limit_per_minute=settings.auth_rate_limit_per_minute, path_prefix="/api/auth/")
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(
         CORSMiddleware,

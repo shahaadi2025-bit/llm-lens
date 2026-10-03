@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, vi } from "vitest";
 import { App } from "./App";
+import { AuthProvider } from "./hooks/useAuth";
 
 const health = { status: "ok", version: "0.1.0", environment: "t", database: "ok", model_provider: "mock", model_name: "m", mock_mode: true, public_demo_mode: false, notice: "MOCK" };
 const metric = { id: "m1", experiment_id: "e1", name: "accuracy", dimension: "M", value: 0.8333, ci_low: 0.7, ci_high: 0.91, ci_level: 0.95, n: 72, method: "wilson-95", evidence_runs: 72, is_demo_data: true };
@@ -19,7 +20,7 @@ function route(map: Record<string, unknown>) {
 }
 function renderAt(path: string) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(<QueryClientProvider client={qc}><MemoryRouter initialEntries={[path]}><App /></MemoryRouter></QueryClientProvider>);
+  return render(<QueryClientProvider client={qc}><AuthProvider><MemoryRouter initialEntries={[path]}><App /></MemoryRouter></AuthProvider></QueryClientProvider>);
 }
 afterEach(() => vi.restoreAllMocks());
 

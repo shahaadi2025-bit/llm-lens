@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, vi } from "vitest";
 import { App } from "./App";
+import { AuthProvider } from "./hooks/useAuth";
 
 const health = {
   status: "ok", version: "0.1.0", environment: "test", database: "ok", model_provider: "mock",
@@ -12,7 +13,7 @@ const health = {
 function renderAt(path: string) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <QueryClientProvider client={qc}><MemoryRouter initialEntries={[path]}><App /></MemoryRouter></QueryClientProvider>,
+    <QueryClientProvider client={qc}><AuthProvider><MemoryRouter initialEntries={[path]}><App /></MemoryRouter></AuthProvider></QueryClientProvider>,
   );
 }
 

@@ -10,6 +10,8 @@ from app.models.enums import AnomalyStatus
 class FailureCluster(Base, IdMixin, CreatedMixin):
     __tablename__ = "failure_clusters"
 
+    # NULL = shared clusters built only from public/anonymous experiments; otherwise a user's private clustering.
+    owner_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, ForeignKey("users.id"), index=True, nullable=True)
     label: Mapped[str] = mapped_column(String(200))
     method: Mapped[str] = mapped_column(String(80))
     size: Mapped[int] = mapped_column(Integer, default=0)

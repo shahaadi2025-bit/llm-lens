@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.auth import optional_user
 from app.api.experiments import _summaries, build_run_outs
 from app.core.db import get_session
 from app.models import (
@@ -15,6 +16,7 @@ from app.models import (
     Metric,
     MetricEvidence,
     ModelVersion,
+    User,
 )
 from app.models.enums import ExperimentStatus
 from app.schemas.analysis import (
@@ -25,6 +27,7 @@ from app.schemas.analysis import (
     MetricOut,
     StatementOut,
 )
+from app.services.access import get_visible, visible
 from app.services.metrics import compute_and_store_metrics, load_rows
 from app.statistics.sensitivity import analyse
 
@@ -47,9 +50,9 @@ async def _metric_out(session: AsyncSession, m: Metric) -> MetricOut:
 
 
 @router.get("/experiments/{experiment_id}/metrics", response_model=list[MetricOut])
-async def experiment_metrics(experiment_id: uuid.UUID, session: AsyncSession = Depends(get_session)) -> list[MetricOut]:
-    if await session.get(Experiment, experiment_id) is None:
-        raise HTTPException(404, "experiment not found")
+async def experiment_metrics(experiment_id: uuid.UUID, session: AsyncSession = Depends(get_session),
+                             user: User | None = Depends(optional_user)) -> list[MetricOut]:
+    await get_visible(session, experiment_id, user)
     ms = list((await session.execute(select(Metric).where(Metric.experiment_id == experiment_id)
                                      .order_by(Metric.name))).scalars())
     if not ms:  # e.g. finished before metrics existed: compute lazily, idempotently
@@ -58,10 +61,12 @@ async def experiment_metrics(experiment_id: uuid.UUID, session: AsyncSession = D
 
 
 @router.get("/metrics/{metric_id}/evidence", response_model=MetricEvidenceOut)
-async def metric_evidence(metric_id: uuid.UUID, session: AsyncSession = Depends(get_session)) -> MetricEvidenceOut:
+async def metric_evidence(metric_id: uuid.UUID, session: AsyncSession = Depends(get_session),
+                          user: User | None = Depends(optional_user)) -> MetricEvidenceOut:
     m = await session.get(Metric, metric_id)
     if m is None:
         raise HTTPException(404, "metric not found")
+    await get_visible(session, m.experiment_id, user)  # 404 if the experiment is private to someone else
     run_ids = list((await session.execute(select(MetricEvidence.run_id).where(MetricEvidence.metric_id == m.id))).scalars())
     runs = list((await session.execute(select(ExperimentRun).where(ExperimentRun.id.in_(run_ids))
                                        .order_by(ExperimentRun.run_index))).scalars())
@@ -69,10 +74,9 @@ async def metric_evidence(metric_id: uuid.UUID, session: AsyncSession = Depends(
 
 
 @router.get("/experiments/{experiment_id}/analysis", response_model=AnalysisOut)
-async def experiment_analysis(experiment_id: uuid.UUID, session: AsyncSession = Depends(get_session)) -> AnalysisOut:
-    exp = await session.get(Experiment, experiment_id)
-    if exp is None:
-        raise HTTPException(404, "experiment not found")
+async def experiment_analysis(experiment_id: uuid.UUID, session: AsyncSession = Depends(get_session),
+                              user: User | None = Depends(optional_user)) -> AnalysisOut:
+    exp = await get_visible(session, experiment_id, user)
     rows = [(r.group, r.block, r.passed) for r in await load_rows(session, experiment_id, exp.task_type)
             if r.group and r.block]
     res = analyse(rows)
@@ -86,27 +90,34 @@ async def experiment_analysis(experiment_id: uuid.UUID, session: AsyncSession = 
 
 
 @router.get("/dashboard", response_model=DashboardOut)
-async def dashboard(session: AsyncSession = Depends(get_session)) -> DashboardOut:
-    total = (await session.execute(select(func.count()).select_from(Experiment))).scalar_one()
+async def dashboard(session: AsyncSession = Depends(get_session), user: User | None = Depends(optional_user)) -> DashboardOut:
+    vis = visible(user)
+    total = (await session.execute(select(func.count()).select_from(Experiment).where(vis))).scalar_one()
     completed = (await session.execute(select(func.count()).select_from(Experiment).where(
-        Experiment.status == ExperimentStatus.COMPLETED.value))).scalar_one()
+        vis, Experiment.status == ExperimentStatus.COMPLETED.value))).scalar_one()
     models = (await session.execute(select(func.count(func.distinct(LLMModel.id))).select_from(Experiment)
                                     .join(ModelVersion, ModelVersion.id == Experiment.model_version_id)
-                                    .join(LLMModel, LLMModel.id == ModelVersion.model_id))).scalar_one()
-    flagged = (await session.execute(select(FailureMode.run_id, FailureMode.label, FailureMode.details))).all()
+                                    .join(LLMModel, LLMModel.id == ModelVersion.model_id).where(vis))).scalar_one()
+    flagged = (await session.execute(
+        select(FailureMode.run_id, FailureMode.label, FailureMode.details)
+        .join(ExperimentRun, ExperimentRun.id == FailureMode.run_id)
+        .join(Experiment, Experiment.id == ExperimentRun.experiment_id).where(vis))).all()
     # Count distinct runs, not detector rows. Statistical outliers count only when >= 2 methods agree: a single
     # method (Isolation Forest especially) flags a fixed fraction of any data set by construction.
-    anomalous_runs = {r for r, label, d in flagged if label == "representation_sensitivity" or d.get("n_methods", 0) >= 2}
-    anomalies = len(anomalous_runs)
-    clusters = (await session.execute(select(func.count()).select_from(FailureCluster))).scalar_one()
-    recent = list((await session.execute(select(Experiment).order_by(Experiment.created_at.desc()).limit(5))).scalars())
+    anomalies = len({r for r, label, d in flagged if label == "representation_sensitivity" or d.get("n_methods", 0) >= 2})
+    own = (await session.execute(select(func.count()).select_from(FailureCluster).where(
+        FailureCluster.owner_id == user.id))).scalar_one() if user else 0
+    shared = (await session.execute(select(func.count()).select_from(FailureCluster).where(
+        FailureCluster.owner_id.is_(None)))).scalar_one()
+    clusters = own or shared  # a signed-in user's own clustering replaces the shared one
+    recent = list((await session.execute(select(Experiment).where(vis).order_by(Experiment.created_at.desc()).limit(5))).scalars())
     demo = (await session.execute(select(func.count()).select_from(Experiment)
-                                  .where(Experiment.is_demo_data.is_(True)))).scalar_one()
+                                  .where(vis, Experiment.is_demo_data.is_(True)))).scalar_one()
     return DashboardOut(
         experiments_total=total, experiments_completed=completed, models_tested=models, potential_anomalies=anomalies,
-        failure_clusters=clusters, recent=await _summaries(session, recent), includes_demo_data=demo > 0,
+        failure_clusters=clusters, recent=await _summaries(session, recent, user), includes_demo_data=demo > 0,
         notes=[
+            "Counts include only experiments you are allowed to see: public ones, shared demo ones and your own.",
             "Potential anomalies are distinct runs flagged by form-sensitivity or by two or more outlier methods; "
             "they are not confirmed failures.",
-            "Failure clustering is not implemented yet (Phase 5); its count is a real zero.",
         ])

@@ -1,7 +1,18 @@
 import type {
   Analysis, Cluster, ClusterDetail, Compare, Dashboard, Fingerprint, ModelVersion, Experiment, Explain, Failure, Lineage, ExperimentCreate, ExperimentDetail, ExperimentType, Health, Metric,
-  MetricEvidence, ModelInfo,
+  MetricEvidence, ModelInfo, SavedConfig, TokenResponse, User,
 } from "../types/api";
+
+const TOKEN_KEY = "lens_token";
+let token: string | null = typeof localStorage !== "undefined" ? localStorage.getItem(TOKEN_KEY) : null;
+
+/** The token is the user's own session credential. It is never logged and lives only in this tab's storage. */
+export function setToken(t: string | null) {
+  token = t;
+  try { t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY); } catch { /* storage unavailable */ }
+}
+export const getToken = () => token;
+const authHeader = (): Record<string, string> => (token ? { Authorization: `Bearer ${token}` } : {});
 
 export class ApiError extends Error {
   constructor(message: string, public status?: number) {
@@ -12,7 +23,7 @@ export class ApiError extends Error {
 async function get<T>(path: string): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(`/api${path}`, { headers: { Accept: "application/json" } });
+    res = await fetch(`/api${path}`, { headers: { Accept: "application/json", ...authHeader() } });
   } catch {
     throw new ApiError("Cannot reach the LLM Lens backend. Is it running?");
   }
@@ -20,6 +31,11 @@ async function get<T>(path: string): Promise<T> {
 }
 
 async function parse<T>(res: Response): Promise<T> {
+  if (res.status === 401 && token) {  // expired or revoked: drop it so the UI falls back to signed-out
+    setToken(null);
+    window.dispatchEvent(new Event("lens-auth-changed"));
+  }
+  if (res.status === 204) return undefined as T;
   if (!res.ok) {
     let detail = `Request failed (${res.status})`;
     try {
@@ -31,11 +47,11 @@ async function parse<T>(res: Response): Promise<T> {
   return (await res.json()) as T;
 }
 
-async function post<T>(path: string, body?: unknown): Promise<T> {
+async function send<T>(method: string, path: string, body?: unknown): Promise<T> {
   let res: Response;
   try {
     res = await fetch(`/api${path}`, {
-      method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" },
+      method, headers: { "Content-Type": "application/json", Accept: "application/json", ...authHeader() },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch {
@@ -43,9 +59,18 @@ async function post<T>(path: string, body?: unknown): Promise<T> {
   }
   return parse<T>(res);
 }
+const post = <T,>(path: string, body?: unknown) => send<T>("POST", path, body);
 
 export const api = {
   health: () => get<Health>("/health"),
+  register: (email: string, password: string, display_name: string) =>
+    post<TokenResponse>("/auth/register", { email, password, display_name }),
+  login: (email: string, password: string) => post<TokenResponse>("/auth/login", { email, password }),
+  me: () => get<User>("/auth/me"),
+  setVisibility: (id: string, is_public: boolean) => send<Experiment>("PATCH", `/experiments/${id}`, { is_public }),
+  configs: () => get<SavedConfig[]>("/configs"),
+  saveConfig: (c: Omit<SavedConfig, "id" | "created_at" | "is_public">) => post<SavedConfig>("/configs", c),
+  deleteConfig: (id: string) => send<void>("DELETE", `/configs/${id}`),
   dashboard: () => get<Dashboard>("/dashboard"),
   clusters: () => get<Cluster[]>("/failure-clusters"),
   cluster: (id: string) => get<ClusterDetail>(`/failure-clusters/${id}`),

@@ -1,6 +1,7 @@
-import { BookOpen, Boxes, FlaskConical, Fingerprint, GitCompare, LayoutDashboard, Menu, SearchX, X } from "lucide-react";
+import { BookOpen, UserRound, Boxes, FlaskConical, Fingerprint, GitCompare, LayoutDashboard, Menu, SearchX, X } from "lucide-react";
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 import { DemoBanner } from "./DemoBanner";
 import { StatusBadge } from "./StatusBadge";
 
@@ -15,6 +16,7 @@ const NAV = [
 ];
 
 function Nav({ onNavigate }: { onNavigate?: () => void }) {
+  const { user } = useAuth();
   return (
     <nav aria-label="Primary" className="flex flex-col gap-1">
       {NAV.map(({ to, label, icon: Icon, end }) => (
@@ -33,6 +35,9 @@ function Nav({ onNavigate }: { onNavigate?: () => void }) {
           {label}
         </NavLink>
       ))}
+      <NavLink to="/account" onClick={onNavigate} className={({ isActive }) => `flex items-center gap-3 rounded px-3 py-2 text-sm ${isActive ? "bg-lens-wash font-medium text-lens-deep" : "text-ink-soft hover:bg-bench"}`}>
+        <UserRound className="h-4 w-4" aria-hidden />{user ? user.display_name : "Sign in"}
+      </NavLink>
     </nav>
   );
 }

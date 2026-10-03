@@ -11,8 +11,9 @@ from app.clustering.kmeans import cluster
 from app.clustering.taxonomy import ERROR_TYPES, classify_failure
 from app.core.config import Settings
 from app.experiments.registry import get_experiment_type
-from app.models import Evaluation, Experiment, ExperimentRun, FailureCluster, FailureMode, Prompt, Response
+from app.models import Evaluation, Experiment, ExperimentRun, FailureCluster, FailureMode, Prompt, Response, User
 from app.models.enums import AnomalyStatus, RunStatus
+from app.services.access import visible
 
 EVALUATOR_LABEL = "incorrect_answer"
 MAX_RUNS = 2000
@@ -41,14 +42,18 @@ def describe(items: list[_Item]) -> str:
     return f"{base}: mixed forms" if len(groups) > 1 else base
 
 
-async def recompute_clusters(session: AsyncSession, settings: Settings, seed: int = 0) -> list[FailureCluster]:
+async def recompute_clusters(session: AsyncSession, settings: Settings, user: User | None = None,
+                              seed: int = 0) -> list[FailureCluster]:
+    """Anonymous callers cluster only what everyone can see (shared clusters, owner NULL). A signed-in user clusters
+    everything visible to them, and the result is stored as theirs, so private data never reaches shared clusters."""
+    owner_id = user.id if user else None
     rows = (await session.execute(
         select(ExperimentRun.id, Experiment.id, Experiment.task_type, Prompt.variant_params, Prompt.text,
                Prompt.expected_answer, Response.text)
         .join(Experiment, Experiment.id == ExperimentRun.experiment_id)
         .join(Prompt, Prompt.run_id == ExperimentRun.id).join(Response, Response.run_id == ExperimentRun.id)
         .join(Evaluation, Evaluation.run_id == ExperimentRun.id)
-        .where(ExperimentRun.status == RunStatus.SUCCEEDED.value, Evaluation.passed.is_(False))
+        .where(ExperimentRun.status == RunStatus.SUCCEEDED.value, Evaluation.passed.is_(False), visible(user))
         .order_by(ExperimentRun.finished_at.desc()).limit(MAX_RUNS))).all()
 
     items: list[_Item] = []
@@ -62,8 +67,9 @@ async def recompute_clusters(session: AsyncSession, settings: Settings, seed: in
                            normalise_for_embedding(f"form={group} type={et} prompt={prompt} response={response}")))
 
     # Replace previous clustering (members first, then clusters). Anomaly flags from detectors are untouched.
-    await session.execute(delete(FailureMode).where(FailureMode.label == EVALUATOR_LABEL))
-    await session.execute(delete(FailureCluster))
+    mine = select(FailureCluster.id).where(FailureCluster.owner_id == owner_id if owner_id else FailureCluster.owner_id.is_(None))
+    await session.execute(delete(FailureMode).where(FailureMode.label == EVALUATOR_LABEL, FailureMode.cluster_id.in_(mine)))
+    await session.execute(delete(FailureCluster).where(FailureCluster.id.in_(mine)))
     if not items:
         await session.commit()
         return []
@@ -73,7 +79,7 @@ async def recompute_clusters(session: AsyncSession, settings: Settings, seed: in
     clusters: list[FailureCluster] = []
     for c in range(result.k):
         members = [it for it, lab in zip(items, result.labels, strict=True) if lab == c]
-        fc = FailureCluster(label=describe(members), method=f"kmeans(k={result.k}, silhouette={result.silhouette})"
+        fc = FailureCluster(owner_id=owner_id, label=describe(members), method=f"kmeans(k={result.k}, silhouette={result.silhouette})"
                             if result.silhouette is not None else "single-cluster (too few failures or no separable structure)",
                             size=len(members), centroid=None, embedding_model=embedder.name)
         session.add(fc)

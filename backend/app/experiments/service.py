@@ -134,7 +134,8 @@ async def clone_experiment(session: AsyncSession, original: Experiment, info: Mo
         name=f"{original.name} (clone)", research_question=original.research_question,
         hypothesis=original.hypothesis, task_type=original.task_type, temperature=original.temperature,
         max_tokens=original.max_tokens, seed=original.seed, repetitions=original.repetitions,
-        evaluator=original.evaluator, config=original.config, is_public=original.is_public)
+        evaluator=original.evaluator, config=original.config,
+        is_public=False)  # a clone never inherits visibility: it belongs to whoever cloned it, private by default
     clone = await create_experiment(session, spec, mv, info, settings, owner_id=owner_id, allow_duplicate=True)
     session.add(ExperimentLineage(parent_experiment_id=original.id, child_experiment_id=clone.id, relation="clone"))
     await session.commit()

@@ -16,7 +16,7 @@ export interface RunCounts {
 export interface Experiment {
   id: string; name: string; research_question: string; hypothesis: string | null; task_type: string;
   status: "pending" | "running" | "completed" | "failed" | "cancelled"; model_slug: string; model_version: string;
-  is_demo_data: boolean; evaluator: string; temperature: number; max_tokens: number; seed: number;
+  is_demo_data: boolean; is_public: boolean; owned_by_me: boolean; evaluator: string; temperature: number; max_tokens: number; seed: number;
   repetitions: number; created_at: string; started_at: string | null; finished_at: string | null;
   error: string | null; counts: RunCounts;
 }
@@ -45,6 +45,7 @@ export interface ModelInfo {
 }
 export interface ExperimentCreate {
   name: string; task_type: string; seed: number; repetitions: number; research_question?: string; model_slug?: string;
+  is_public?: boolean;
 }
 
 export interface Metric {
@@ -115,4 +116,11 @@ export interface Compare {
   matched: { task_type: string; a: { id: string; name: string }; b: { id: string; name: string } }[];
   unmatched_a: { id: string; name: string }[]; unmatched_b: { id: string; name: string }[];
   differences: Diff[]; latency_ms: Record<string, number | null>; notes: string[];
+}
+
+export interface User { id: string; email: string; display_name: string; }
+export interface TokenResponse { token: string; token_type: string; user: User; }
+export interface SavedConfig {
+  id: string; name: string; task_type: string; temperature: number; max_tokens: number; seed: number;
+  repetitions: number; config: Record<string, unknown>; is_public: boolean; created_at: string;
 }

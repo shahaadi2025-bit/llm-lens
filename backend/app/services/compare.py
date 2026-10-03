@@ -9,9 +9,10 @@ from scipy import stats
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Experiment, LLMModel, Metric, ModelVersion
+from app.models import Experiment, LLMModel, Metric, ModelVersion, User
 from app.models.enums import ExperimentStatus
 from app.schemas.fingerprint import CompareOut, DiffOut, ExperimentRef, MatchedDesign
+from app.services.access import visible
 from app.services.metrics import load_rows
 from app.statistics.effect_sizes import cohens_h
 from app.statistics.proportions import newcombe_difference
@@ -24,9 +25,9 @@ def design_hash(e: Experiment) -> str:
         "r": e.repetitions, "ev": e.evaluator}, sort_keys=True, default=str).encode()).hexdigest()
 
 
-async def _completed(session: AsyncSession, version_id: uuid.UUID) -> dict[str, Experiment]:
+async def _completed(session: AsyncSession, version_id: uuid.UUID, user: User | None) -> dict[str, Experiment]:
     exps = (await session.execute(select(Experiment).where(
-        Experiment.model_version_id == version_id, Experiment.status == ExperimentStatus.COMPLETED.value)
+        visible(user), Experiment.model_version_id == version_id, Experiment.status == ExperimentStatus.COMPLETED.value)
         .order_by(Experiment.created_at.desc()))).scalars()
     out: dict[str, Experiment] = {}
     for e in exps:
@@ -50,14 +51,14 @@ def _statement(label: str, d: float, lo: float, hi: float, demo: bool) -> str:
     return s + (" (DEMO: the mock versions differ by an injected error rate, by construction.)" if demo else "")
 
 
-async def compare_versions(session: AsyncSession, a_id: uuid.UUID, b_id: uuid.UUID) -> CompareOut:
+async def compare_versions(session: AsyncSession, a_id: uuid.UUID, b_id: uuid.UUID, user: User | None = None) -> CompareOut:
     a_mv, b_mv = await session.get(ModelVersion, a_id), await session.get(ModelVersion, b_id)
     if a_mv is None or b_mv is None:
         raise ValueError("unknown model version")
     a_model, b_model = await session.get(LLMModel, a_mv.model_id), await session.get(LLMModel, b_mv.model_id)
     assert a_model and b_model
     demo = a_model.is_mock or b_model.is_mock
-    A, B = await _completed(session, a_id), await _completed(session, b_id)
+    A, B = await _completed(session, a_id, user), await _completed(session, b_id, user)
     shared = sorted(set(A) & set(B))
 
     pooled: dict[tuple[str, str | None], list[int]] = defaultdict(lambda: [0, 0, 0, 0])  # kA nA kB nB

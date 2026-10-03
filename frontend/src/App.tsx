@@ -1,5 +1,6 @@
 import { Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
+import { Account } from "./pages/Account";
 import { Compare } from "./pages/Compare";
 import { Fingerprint } from "./pages/Fingerprint";
 import { ExplainFailure } from "./pages/ExplainFailure";
@@ -23,6 +24,7 @@ export function App() {
         <Route path="failures/:id" element={<ExplainFailure />} />
         <Route path="fingerprint" element={<Fingerprint />} />
         <Route path="compare" element={<Compare />} />
+        <Route path="account" element={<Account />} />
         <Route path="models" element={<Models />} />
         <Route path="*" element={<NotFound />} />
       </Route>

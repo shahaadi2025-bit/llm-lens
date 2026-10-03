@@ -69,6 +69,8 @@ class ExperimentOut(BaseModel):
     model_slug: str
     model_version: str
     is_demo_data: bool
+    is_public: bool
+    owned_by_me: bool
     evaluator: str
     temperature: float
     max_tokens: int
@@ -109,3 +111,31 @@ class ModelOut(BaseModel):
     versions: list[str]
     experiment_count: int
     configured: bool  # True = the model this server is currently set up to run
+
+
+class VisibilityUpdate(BaseModel):
+    is_public: bool
+
+
+class SavedConfigCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    task_type: str
+    temperature: float = Field(default=0.0, ge=0.0, le=2.0)
+    max_tokens: int = Field(default=64, ge=1, le=2048)
+    seed: int = Field(default=0, ge=0, le=2**31 - 1)
+    repetitions: int = Field(default=1, ge=1, le=20)
+    config: dict[str, Any] = Field(default_factory=dict)
+    is_public: bool = False
+
+
+class SavedConfigOut(BaseModel):
+    id: uuid.UUID
+    name: str
+    task_type: str
+    temperature: float
+    max_tokens: int
+    seed: int
+    repetitions: int
+    config: dict[str, Any]
+    is_public: bool
+    created_at: datetime

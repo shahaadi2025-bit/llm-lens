@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, vi } from "vitest";
 import { App } from "./App";
+import { AuthProvider } from "./hooks/useAuth";
 
 const health = { status: "ok", version: "0.1.0", environment: "t", database: "ok", model_provider: "mock", model_name: "m", mock_mode: true, public_demo_mode: false, notice: "MOCK" };
 const model = { id: "m1", slug: "mock-deterministic-v1", display_name: "Mock v1", provider: "mock", context_length: 4096, capabilities: {}, is_mock: true, versions: ["mock-1"], experiment_count: 1, configured: true };
@@ -18,7 +19,7 @@ function route(map: Record<string, unknown>) {
 }
 function renderAt(path: string) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(<QueryClientProvider client={qc}><MemoryRouter initialEntries={[path]}><App /></MemoryRouter></QueryClientProvider>);
+  return render(<QueryClientProvider client={qc}><AuthProvider><MemoryRouter initialEntries={[path]}><App /></MemoryRouter></AuthProvider></QueryClientProvider>);
 }
 afterEach(() => vi.restoreAllMocks());
 

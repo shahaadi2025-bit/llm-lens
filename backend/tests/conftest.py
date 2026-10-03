@@ -4,6 +4,7 @@ import os
 os.environ["APP_ENV"] = "test"
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
 os.environ["MODEL_PROVIDER"] = "mock"
+os.environ["SECRET_KEY"] = "test-secret-key-0123456789abcdef0123456789"
 
 import pytest  # noqa: E402
 from httpx import ASGITransport, AsyncClient  # noqa: E402

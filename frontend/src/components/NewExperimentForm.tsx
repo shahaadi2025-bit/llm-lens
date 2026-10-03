@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 import { api } from "../services/api";
 
 export function NewExperimentForm() {
@@ -12,18 +13,25 @@ export function NewExperimentForm() {
   const [seed, setSeed] = useState(0);
   const [reps, setReps] = useState(1);
   const [model, setModel] = useState("");
+  const { user } = useAuth();
+  const [pub, setPub] = useState(false);
+  const configs = useQuery({ queryKey: ["configs"], queryFn: api.configs, enabled: !!user });
   const models = useQuery({ queryKey: ["models"], queryFn: api.models });
   const selected = types.data?.find((t) => t.task_type === (taskType || types.data?.[0]?.task_type));
 
   const create = useMutation({
     mutationFn: async () => {
-      const exp = await api.createExperiment({ name, task_type: selected!.task_type, seed, repetitions: reps, model_slug: model || undefined });
+      const exp = await api.createExperiment({ name, task_type: selected!.task_type, seed, repetitions: reps, model_slug: model || undefined, is_public: user ? pub : undefined });
       await api.runExperiment(exp.id);
       return exp;
     },
     onSuccess: (exp) => { qc.invalidateQueries({ queryKey: ["experiments"] }); nav(`/experiments/${exp.id}`); },
   });
 
+  const save = useMutation({
+    mutationFn: () => api.saveConfig({ name: name || selected!.title, task_type: selected!.task_type, temperature: 0, max_tokens: 64, seed, repetitions: reps, config: {} }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["configs"] }),
+  });
   if (!selected) return null;
   const field = "mt-1 w-full rounded border border-rule bg-white px-3 py-2 text-sm";
   return (
@@ -48,6 +56,17 @@ export function NewExperimentForm() {
           </select>
         </label>
       )}
+      {user && configs.data && configs.data.length > 0 && (
+        <label className="block text-sm">Load a saved configuration
+          <select className={field} defaultValue="" onChange={(e) => {
+            const c = configs.data!.find((x) => x.id === e.target.value);
+            if (c) { setTaskType(c.task_type); setSeed(c.seed); setReps(c.repetitions); setName(c.name); }
+          }}>
+            <option value="">choose…</option>
+            {configs.data.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </label>
+      )}
       <label className="block text-sm">Name
         <input required maxLength={200} className={field} value={name} onChange={(e) => setName(e.target.value)} />
       </label>
@@ -59,10 +78,16 @@ export function NewExperimentForm() {
           <input type="number" min={1} max={20} className={field} value={reps} onChange={(e) => setReps(Number(e.target.value))} />
         </label>
       </div>
+      {user ? (
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={pub} onChange={(e) => setPub(e.target.checked)} /> Make this experiment public (anyone can read it; only you can change it)</label>
+      ) : (
+        <p className="text-xs text-ink-faint">Not signed in: this goes in the shared demo sandbox, visible to everyone. Sign in to keep experiments private.</p>
+      )}
       {create.error && <p role="alert" className="rounded bg-signal-wash p-3 text-sm text-signal">{(create.error as Error).message}</p>}
       <button disabled={create.isPending} className="rounded bg-lens px-4 py-2 text-sm font-medium text-white hover:bg-lens-deep disabled:opacity-50">
         {create.isPending ? "Starting…" : "Create and run"}
       </button>
+      {user && <button type="button" onClick={() => save.mutate()} className="ml-3 text-sm text-lens underline">{save.isSuccess ? "Saved" : "Save these settings"}</button>}
     </form>
   );
 }

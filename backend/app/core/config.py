@@ -55,6 +55,14 @@ class Settings(BaseSettings):
 
     embeddings_backend: Literal["tfidf", "sentence-transformers"] = "tfidf"  # tfidf needs no torch; fits free tiers
 
+    allow_registration: bool = True
+    allow_anonymous_writes: bool = True  # public sandbox: visitors may run limited experiments without an account
+    access_token_ttl_minutes: int = 720
+    auth_rate_limit_per_minute: int = 10  # login/register attempts per client IP (public demo mode)
+    public_max_users: int = 200
+    public_max_experiments_per_user: int = 30
+    public_max_concurrent_experiments: int = 2
+
     request_timeout_s: float = 60.0
     max_concurrency: int = 4
     max_retries: int = 2
@@ -82,8 +90,9 @@ class Settings(BaseSettings):
 
     def assert_production_safe(self) -> None:
         """Refuse to boot in production with the placeholder secret."""
-        if self.app_env == "production" and self.secret_key.startswith(("dev-", "change-me")):
-            raise RuntimeError("SECRET_KEY must be set to a strong random value in production.")
+        weak = self.secret_key.startswith(("dev-", "change-me")) or len(self.secret_key) < 32
+        if self.app_env == "production" and weak:
+            raise RuntimeError("SECRET_KEY must be a random value of at least 32 characters in production.")
 
 
 @lru_cache

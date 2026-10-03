@@ -53,7 +53,7 @@ Planned for Phase 7: notebook tables (investigations, notes).
 - `ExperimentType`: builds prompt variants, picks evaluator, defines metrics and fingerprint dimension.
 
 ## 7. API structure
-Prefix `/api`. Implemented: `GET /health`, `GET /experiment-types`, `POST|GET /experiments`, `GET /experiments/{id}`, `POST /experiments/{id}/run|cancel|clone`, `GET /models`, `GET /models/{id}`, `GET /system/hardware`, `GET /experiments/{id}/metrics`, `GET /experiments/{id}/analysis`, `GET /metrics/{id}/evidence`, `GET /dashboard`, `GET /failures`, `GET /failures/{id}/explain`, `POST /experiments/{id}/follow-up`, `GET /experiments/{id}/lineage`, `GET|POST /failure-clusters`, `GET /fingerprints/{model_id}`, `GET /model-versions`, `GET /compare`; docs at `/api/docs`. Planned per spec: experiments (create, list,
+Prefix `/api`. Implemented: `GET /health`, `GET /experiment-types`, `POST|GET /experiments`, `GET /experiments/{id}`, `POST /experiments/{id}/run|cancel|clone`, `GET /models`, `GET /models/{id}`, `GET /system/hardware`, `GET /experiments/{id}/metrics`, `GET /experiments/{id}/analysis`, `GET /metrics/{id}/evidence`, `GET /dashboard`, `GET /failures`, `GET /failures/{id}/explain`, `POST /experiments/{id}/follow-up`, `GET /experiments/{id}/lineage`, `GET|POST /failure-clusters`, `GET /fingerprints/{model_id}`, `GET /model-versions`, `GET /compare`, `POST /auth/register|login`, `GET /auth/me`, `PATCH /experiments/{id}`, `GET|POST|DELETE /configs`; docs at `/api/docs`. Planned per spec: experiments (create, list,
 get, run, clone, follow-up), models, fingerprints, failures, failure-clusters, reports.
 
 ## 8. Deployment architecture
@@ -63,12 +63,11 @@ Frontend, backend, database and inference are independent components, each repla
 Free tiers change; `DEPLOYMENT.md` (Phase 8) will record the process as of its writing and make no permanence claims.
 
 ## 9. Security model
-Implemented: env-based config, production refuses placeholder `SECRET_KEY`, CORS allow-list, security headers,
-no secrets in the frontend, `.env` git-ignored. Planned (Phase 6): auth, authorization, rate limits, request
-size and concurrency limits, timeouts, safe logging.
+See [SECURITY.md](SECURITY.md): scrypt password hashing, HS256 JWT sessions, visibility enforced centrally for every endpoint,
+per-IP and per-account abuse limits in public mode, production refuses a weak `SECRET_KEY`.
 
 ## 10. Milestones
-Phases 1-9 as in the project brief. Done: Phase 1 (skeleton, schema, Docker, health), Phase 2 (adapters, engine, evaluators, first experiment), Phase 3 (statistics, metrics + evidence, charts, dashboard), Phase 4 (prompt mutation, anomaly detection, follow-ups, explain, lineage), Phase 5 (clustering, fingerprint, version comparison).
+Phases 1-9 as in the project brief. Done: Phase 1 (skeleton, schema, Docker, health), Phase 2 (adapters, engine, evaluators, first experiment), Phase 3 (statistics, metrics + evidence, charts, dashboard), Phase 4 (prompt mutation, anomaly detection, follow-ups, explain, lineage), Phase 5 (clustering, fingerprint, version comparison), Phase 6 (accounts, authorization, public-mode limits).
 
 ## 11. Risks and mitigations
 | Risk | Mitigation |

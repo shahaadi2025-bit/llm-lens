@@ -17,7 +17,8 @@ One service means one URL and no CORS configuration. Components are still separa
 - `MODEL_PROVIDER=mock`: outputs are deterministic placeholders, labelled DEMO / MOCK DATA everywhere. The public
   site demonstrates the platform, not real LLM behavior. Real experiments: run locally with Ollama or a local model.
 - `PUBLIC_DEMO_MODE=true`: max 40 runs per experiment, 20 write requests per minute per IP, 300 experiments total.
-- Not built yet (Phase 6): user accounts and private experiments. Everyone sees the same public data.
+- Accounts: visitors can create an account to keep experiments private; anonymous visitors use a shared sandbox. Limits: 30
+  experiments per account, 200 accounts, 2 concurrent runs. See [SECURITY.md](SECURITY.md).
 
 ## Steps
 1. **GitHub.** Create an empty repository, then from the project folder in PowerShell:
@@ -49,7 +50,8 @@ One service means one URL and no CORS configuration. Components are still separa
 - [ ] `PUBLIC_DEMO_MODE=true`, `MODEL_PROVIDER=mock`
 - [ ] `/api/health` reports database ok
 - [ ] No `.env` or secrets in the repository
-- [ ] Limitations: in-memory rate limiter is per-process; no auth until Phase 6
+- [ ] `SECRET_KEY` is at least 32 characters (Render's generated value qualifies)
+- [ ] Limitations: in-memory rate limiter is per-process (one container only); no email verification or password reset
 
 ## Alternatives considered (Oct 2026)
 Hugging Face Docker Spaces, Koyeb and Fly.io no longer offer card-free free container hosting; Supabase free

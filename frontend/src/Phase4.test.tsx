@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, vi } from "vitest";
 import { App } from "./App";
+import { AuthProvider } from "./hooks/useAuth";
 
 const health = { status: "ok", version: "0.1.0", environment: "t", database: "ok", model_provider: "mock", model_name: "m", mock_mode: true, public_demo_mode: false, notice: "MOCK" };
 const failure = { id: "f1", run_id: "r1", experiment_id: "e1", experiment_name: "arith", label: "representation_sensitivity", detector: "paired_discordance", status: "potential_anomaly", details: { block: "37x84#0", failed_group: "b_star_a" }, prompt: "84 * 37 = ?", response: "The answer is 3103.", expected_answer: "3108", is_demo_data: true, can_follow_up: true };
@@ -20,7 +21,7 @@ function route(map: Record<string, unknown>) {
 }
 function renderAt(path: string) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(<QueryClientProvider client={qc}><MemoryRouter initialEntries={[path]}><App /></MemoryRouter></QueryClientProvider>);
+  return render(<QueryClientProvider client={qc}><AuthProvider><MemoryRouter initialEntries={[path]}><App /></MemoryRouter></AuthProvider></QueryClientProvider>);
 }
 afterEach(() => vi.restoreAllMocks());
 

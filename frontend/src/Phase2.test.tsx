@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, vi } from "vitest";
 import { App } from "./App";
+import { AuthProvider } from "./hooks/useAuth";
 
 const counts = { total: 6, pending: 0, running: 0, succeeded: 6, failed: 0, cancelled: 0, passed: 4 };
 const exp = {
@@ -22,7 +23,7 @@ function route(map: Record<string, unknown>) {
 }
 function renderAt(path: string) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(<QueryClientProvider client={qc}><MemoryRouter initialEntries={[path]}><App /></MemoryRouter></QueryClientProvider>);
+  return render(<QueryClientProvider client={qc}><AuthProvider><MemoryRouter initialEntries={[path]}><App /></MemoryRouter></AuthProvider></QueryClientProvider>);
 }
 afterEach(() => vi.restoreAllMocks());
 

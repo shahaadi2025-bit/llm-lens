@@ -6,9 +6,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.experiments.registry import list_experiment_types
-from app.models import Experiment, LLMModel, Metric, ModelVersion
+from app.models import Experiment, LLMModel, Metric, ModelVersion, User
 from app.models.enums import ExperimentStatus
 from app.schemas.fingerprint import DimensionMetric, DimensionOut, FingerprintOut
+from app.services.access import visible
 from app.statistics.proportions import wilson_interval
 
 DIMENSIONS = {
@@ -22,10 +23,11 @@ HOW = {
 NOT_YET = "No experiment type for this dimension is implemented yet."
 
 
-async def build_fingerprint(session: AsyncSession, model: LLMModel, version_id: uuid.UUID | None = None) -> FingerprintOut:
+async def build_fingerprint(session: AsyncSession, model: LLMModel, version_id: uuid.UUID | None = None,
+                            user: User | None = None) -> FingerprintOut:
     q = (select(Metric, Experiment, ModelVersion).join(Experiment, Experiment.id == Metric.experiment_id)
          .join(ModelVersion, ModelVersion.id == Experiment.model_version_id)
-         .where(ModelVersion.model_id == model.id, Metric.name == "accuracy", Metric.dimension.is_not(None),
+         .where(ModelVersion.model_id == model.id, Metric.name == "accuracy", Metric.dimension.is_not(None), visible(user),
                 Experiment.status == ExperimentStatus.COMPLETED.value))
     version_label = None
     if version_id:

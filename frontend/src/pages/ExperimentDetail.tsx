@@ -18,28 +18,33 @@ export function ExperimentDetail() {
   const refresh = () => { qc.invalidateQueries({ queryKey: ["experiment", id] }); qc.invalidateQueries({ queryKey: ["experiments"] }); };
   const run = useMutation({ mutationFn: () => api.runExperiment(id), onSuccess: refresh });
   const cancel = useMutation({ mutationFn: () => api.cancelExperiment(id), onSuccess: refresh });
+  const visibility = useMutation({ mutationFn: (pub: boolean) => api.setVisibility(id, pub), onSuccess: refresh });
   const clone = useMutation({ mutationFn: () => api.cloneExperiment(id), onSuccess: (c) => nav(`/experiments/${c.id}`) });
 
   if (error) return <p role="alert" className="rounded bg-signal-wash p-3 text-sm text-signal">{(error as Error).message}</p>;
   if (!d) return <p className="text-sm text-ink-soft">Loading…</p>;
   const btn = "rounded border border-rule px-3 py-1.5 text-sm hover:bg-panel disabled:opacity-50";
-  const actionError = (run.error ?? cancel.error ?? clone.error) as Error | null;
+  const actionError = (run.error ?? cancel.error ?? clone.error ?? visibility.error) as Error | null;
+  const canModify = d.owned_by_me || !d.is_public;  // visible + not mine + not public = anonymous demo sandbox
+  const scope = d.owned_by_me ? (d.is_public ? "Public" : "Private") : d.is_public ? "Public (read-only)" : "Shared demo sandbox";
 
   return (
     <div className="space-y-8">
       <header>
-        <p className="flex flex-wrap items-center gap-2"><Status value={d.status} /> {d.is_demo_data && <DemoTag />}</p>
+        <p className="flex flex-wrap items-center gap-2"><Status value={d.status} /> {d.is_demo_data && <DemoTag />}
+          <span className="rounded bg-bench px-2 py-0.5 text-xs text-ink-soft">{scope}</span></p>
         <h1 className="mt-2 text-3xl font-semibold">{d.name}</h1>
         <p className="mt-3 max-w-prose"><span className="text-ink-faint">Research question. </span>{d.research_question}</p>
         {d.notice && <p className="mt-3 rounded bg-demo-wash p-3 text-sm text-demo">{d.notice}</p>}
         {d.error && <p className="mt-3 rounded bg-signal-wash p-3 text-sm text-signal">{d.error}</p>}
         {actionError && <p role="alert" className="mt-3 rounded bg-signal-wash p-3 text-sm text-signal">{actionError.message}</p>}
         <div className="mt-4 flex flex-wrap gap-2">
-          <button className={btn} disabled={d.status === "running" || run.isPending} onClick={() => run.mutate()}>
+          <button className={btn} disabled={!canModify || d.status === "running" || run.isPending} onClick={() => run.mutate()}>
             {d.status === "completed" ? "Rerun" : d.status === "pending" ? "Run" : "Resume"}
           </button>
-          <button className={btn} disabled={d.status !== "running" && d.status !== "pending"} onClick={() => cancel.mutate()}>Cancel</button>
+          <button className={btn} disabled={!canModify || (d.status !== "running" && d.status !== "pending")} onClick={() => cancel.mutate()}>Cancel</button>
           <button className={btn} onClick={() => clone.mutate()}>Clone experiment</button>
+          {d.owned_by_me && <button className={btn} disabled={visibility.isPending} onClick={() => visibility.mutate(!d.is_public)}>{d.is_public ? "Make private" : "Make public"}</button>}
         </div>
       </header>
 

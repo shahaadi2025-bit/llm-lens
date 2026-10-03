@@ -84,6 +84,9 @@ class ExperimentEngine:
             except asyncio.CancelledError:
                 pass
 
+    def active_count(self) -> int:
+        return sum(1 for t in self._tasks.values() if not t.done())
+
     def is_active(self, experiment_id: uuid.UUID) -> bool:
         task = self._tasks.get(experiment_id)
         return task is not None and not task.done()
