@@ -1,0 +1,21 @@
+# Render Blueprint: one free web service (UI + API). The database is external (Neon), so DATABASE_URL is
+# entered once in the Render dashboard and never committed.
+services:
+  - type: web
+    name: llm-lens
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: PUBLIC_DEMO_MODE
+        value: "true"
+      - key: MODEL_PROVIDER
+        value: mock
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false

@@ -1,0 +1,32 @@
+# Local research mode: `docker compose up --build`, then open http://localhost
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-lens}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-lens}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lens}"]
+      interval: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      args: { WITH_ML: "${WITH_ML:-0}" }
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-lens}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-lens}
+    depends_on:
+      db: { condition: service_healthy }
+    expose: ["8000"]
+
+  frontend:
+    build: ./frontend
+    depends_on: [backend]
+    ports: ["80:80"]
+
+volumes:
+  pgdata:
