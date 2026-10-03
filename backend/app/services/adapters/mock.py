@@ -11,6 +11,7 @@ from app.services.adapters.base import GenerationRequest, GenerationResult, Mode
 
 _MULT = re.compile(r"(\d+)\s*(?:×|x|\*)\s*(\d+)")
 _GROUPS = re.compile(r"(\d+)\s+groups\s+of\s+(\d+)", re.IGNORECASE)
+_PRODUCT = re.compile(r"product\s+of\s+(\d+)\s+and\s+(\d+)", re.IGNORECASE)
 ERROR_PERCENT = 15
 
 
@@ -29,7 +30,8 @@ class MockAdapter(ModelAdapter):
     async def generate(self, request: GenerationRequest) -> GenerationResult:
         start = time.perf_counter()
         digest = int(hashlib.sha256(f"{request.seed}|{request.prompt}".encode()).hexdigest()[:12], 16)
-        match = _MULT.search(request.prompt) or _GROUPS.search(request.prompt)
+        matches = [m for rx in (_MULT, _GROUPS, _PRODUCT) for m in rx.finditer(request.prompt)]
+        match = max(matches, key=lambda m: m.end()) if matches else None  # the real question comes last
         if match:
             value = int(match.group(1)) * int(match.group(2))
             if digest % 100 < ERROR_PERCENT:

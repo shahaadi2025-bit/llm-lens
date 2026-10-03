@@ -53,7 +53,7 @@ Planned for Phase 7: notebook tables (investigations, notes).
 - `ExperimentType`: builds prompt variants, picks evaluator, defines metrics and fingerprint dimension.
 
 ## 7. API structure
-Prefix `/api`. Implemented: `GET /health`, `GET /experiment-types`, `POST|GET /experiments`, `GET /experiments/{id}`, `POST /experiments/{id}/run|cancel|clone`, `GET /models`, `GET /models/{id}`, `GET /system/hardware`, `GET /experiments/{id}/metrics`, `GET /experiments/{id}/analysis`, `GET /metrics/{id}/evidence`, `GET /dashboard`; docs at `/api/docs`. Planned per spec: experiments (create, list,
+Prefix `/api`. Implemented: `GET /health`, `GET /experiment-types`, `POST|GET /experiments`, `GET /experiments/{id}`, `POST /experiments/{id}/run|cancel|clone`, `GET /models`, `GET /models/{id}`, `GET /system/hardware`, `GET /experiments/{id}/metrics`, `GET /experiments/{id}/analysis`, `GET /metrics/{id}/evidence`, `GET /dashboard`, `GET /failures`, `GET /failures/{id}/explain`, `POST /experiments/{id}/follow-up`, `GET /experiments/{id}/lineage`; docs at `/api/docs`. Planned per spec: experiments (create, list,
 get, run, clone, follow-up), models, fingerprints, failures, failure-clusters, reports.
 
 ## 8. Deployment architecture
@@ -68,7 +68,7 @@ no secrets in the frontend, `.env` git-ignored. Planned (Phase 6): auth, authori
 size and concurrency limits, timeouts, safe logging.
 
 ## 10. Milestones
-Phases 1-9 as in the project brief. Done: Phase 1 (skeleton, schema, Docker, health), Phase 2 (adapters, engine, evaluators, first experiment), Phase 3 (statistics, metrics + evidence, charts, dashboard).
+Phases 1-9 as in the project brief. Done: Phase 1 (skeleton, schema, Docker, health), Phase 2 (adapters, engine, evaluators, first experiment), Phase 3 (statistics, metrics + evidence, charts, dashboard), Phase 4 (prompt mutation, anomaly detection, follow-ups, explain, lineage).
 
 ## 11. Risks and mitigations
 | Risk | Mitigation |

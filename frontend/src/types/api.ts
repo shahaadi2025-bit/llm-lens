@@ -65,3 +65,21 @@ export interface Dashboard {
   experiments_total: number; experiments_completed: number; models_tested: number; potential_anomalies: number;
   failure_clusters: number; recent: Experiment[]; includes_demo_data: boolean; notes: string[];
 }
+
+export interface Failure {
+  id: string; run_id: string; experiment_id: string; experiment_name: string; label: string; detector: string;
+  status: "potential_anomaly" | "reproduced" | "not_reproduced" | "dismissed"; details: Record<string, unknown>;
+  prompt: string; response: string | null; expected_answer: string | null; is_demo_data: boolean; can_follow_up: boolean;
+}
+export interface ExplainStep { text: string; evidence_level: string | null; }
+export interface Explain {
+  failure: Failure; observed: string; controlled_variables: string[]; changed_variable: string;
+  follow_ups: { experiment_id: string; name: string; status: string; summary: string | null }[];
+  evidence: { level: string; strength: string; status: string; summary: string };
+  possible_explanations: ExplainStep[]; alternative_explanations: ExplainStep[]; limitations: string[];
+  demo_notice: string | null;
+}
+export interface Lineage {
+  nodes: { id: string; name: string; status: string; is_current: boolean; is_demo_data: boolean; anomalies: number }[];
+  edges: { parent: string; child: string; relation: string; trigger_run_id: string | null; note: string | null }[];
+}

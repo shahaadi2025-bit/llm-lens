@@ -27,4 +27,3 @@ models_cache/
 .idea/
 .vscode/
 *.tsbuildinfo
-.neon

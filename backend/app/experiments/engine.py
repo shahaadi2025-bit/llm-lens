@@ -19,6 +19,8 @@ from app.models import Evaluation, Experiment, ExperimentRun, LLMModel, ModelVer
 from app.models.base import utcnow
 from app.models.enums import ExperimentStatus, RunStatus
 from app.services.adapters.base import GenerationRequest, ModelAdapter
+from app.services.anomalies import detect_and_store
+from app.services.followup_evidence import update_parent_failures
 from app.services.metrics import compute_and_store_metrics
 
 log = logging.getLogger(__name__)
@@ -204,5 +206,8 @@ class ExperimentEngine:
         try:  # analysis must never turn a finished experiment into a failed one
             async with self._sm() as s:
                 await compute_and_store_metrics(s, experiment_id)
+                await detect_and_store(s, experiment_id)
+                if not cancelled:
+                    await update_parent_failures(s, experiment_id)
         except Exception:  # noqa: BLE001
-            log.exception("metric computation failed for %s", experiment_id)
+            log.exception("analysis failed for %s", experiment_id)

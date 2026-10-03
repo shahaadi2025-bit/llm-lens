@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
+import { AnomaliesPanel } from "../components/AnomaliesPanel";
+import { LineageView } from "../components/LineageView";
 import { AnalysisPanel } from "../components/AnalysisPanel";
 import { MetricsPanel } from "../components/MetricsPanel";
 import { DemoTag, Status } from "../components/Status";
@@ -59,6 +61,9 @@ export function ExperimentDetail() {
         </section>
       )}
       {d.counts.succeeded > 0 && d.status !== "running" && <AnalysisPanel experimentId={d.id} status={d.status} />}
+
+      {d.counts.succeeded > 0 && d.status !== "running" && <AnomaliesPanel experimentId={d.id} status={d.status} />}
+      <LineageView experimentId={d.id} />
 
       <section aria-labelledby="runs">
         <h2 id="runs" className="mb-1 text-xl font-semibold">Runs</h2>

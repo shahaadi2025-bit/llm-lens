@@ -25,7 +25,7 @@ export function Dashboard() {
           <dl className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             <Stat label="Experiments completed" value={data.experiments_completed} note={`${data.experiments_total} created`} />
             <Stat label="Models tested" value={data.models_tested} />
-            <Stat label="Potential anomalies" value={data.potential_anomalies} note="Detection arrives in Phase 4" />
+            <Stat label="Potential anomalies" value={data.potential_anomalies} note="Distinct flagged runs, not confirmed failures" />
             <Stat label="Failure clusters" value={data.failure_clusters} note="Clustering arrives in Phase 5" />
           </dl>
           {data.includes_demo_data && (

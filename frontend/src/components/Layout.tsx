@@ -1,4 +1,4 @@
-import { BookOpen, Boxes, FlaskConical, LayoutDashboard, Menu, X } from "lucide-react";
+import { BookOpen, Boxes, FlaskConical, LayoutDashboard, Menu, SearchX, X } from "lucide-react";
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { DemoBanner } from "./DemoBanner";
@@ -7,6 +7,7 @@ import { StatusBadge } from "./StatusBadge";
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/experiments", label: "Experiments", icon: FlaskConical },
+  { to: "/failures", label: "Failure analysis", icon: SearchX },
   { to: "/models", label: "Models", icon: Boxes },
   { to: "/", label: "About LLM Lens", icon: BookOpen, end: true },
 ];

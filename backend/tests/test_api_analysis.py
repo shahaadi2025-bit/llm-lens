@@ -49,5 +49,8 @@ async def test_dashboard_reports_real_counts_only(client):
     await run_experiment(client)
     d = (await client.get("/api/dashboard")).json()
     assert d["experiments_total"] == 1 and d["experiments_completed"] == 1 and d["models_tested"] == 1
-    assert d["potential_anomalies"] == 0 and d["failure_clusters"] == 0 and d["includes_demo_data"] is True
+    flagged = {f["run_id"] for f in (await client.get("/api/failures", params={"limit": 200})).json()
+               if f["label"] == "representation_sensitivity" or f["details"].get("n_methods", 0) >= 2}
+    assert d["potential_anomalies"] == len(flagged) > 0  # counted per distinct run, from real detections
+    assert d["failure_clusters"] == 0 and d["includes_demo_data"] is True
     assert d["recent"][0]["counts"]["succeeded"] == 72 and d["notes"]

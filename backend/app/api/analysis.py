@@ -93,7 +93,11 @@ async def dashboard(session: AsyncSession = Depends(get_session)) -> DashboardOu
     models = (await session.execute(select(func.count(func.distinct(LLMModel.id))).select_from(Experiment)
                                     .join(ModelVersion, ModelVersion.id == Experiment.model_version_id)
                                     .join(LLMModel, LLMModel.id == ModelVersion.model_id))).scalar_one()
-    anomalies = (await session.execute(select(func.count()).select_from(FailureMode))).scalar_one()
+    flagged = (await session.execute(select(FailureMode.run_id, FailureMode.label, FailureMode.details))).all()
+    # Count distinct runs, not detector rows. Statistical outliers count only when >= 2 methods agree: a single
+    # method (Isolation Forest especially) flags a fixed fraction of any data set by construction.
+    anomalous_runs = {r for r, label, d in flagged if label == "representation_sensitivity" or d.get("n_methods", 0) >= 2}
+    anomalies = len(anomalous_runs)
     clusters = (await session.execute(select(func.count()).select_from(FailureCluster))).scalar_one()
     recent = list((await session.execute(select(Experiment).order_by(Experiment.created_at.desc()).limit(5))).scalars())
     demo = (await session.execute(select(func.count()).select_from(Experiment)
@@ -101,4 +105,8 @@ async def dashboard(session: AsyncSession = Depends(get_session)) -> DashboardOu
     return DashboardOut(
         experiments_total=total, experiments_completed=completed, models_tested=models, potential_anomalies=anomalies,
         failure_clusters=clusters, recent=await _summaries(session, recent), includes_demo_data=demo > 0,
-        notes=["Anomaly detection and failure clustering are not implemented yet (Phase 4/5); their counts are real zeros."])
+        notes=[
+            "Potential anomalies are distinct runs flagged by form-sensitivity or by two or more outlier methods; "
+            "they are not confirmed failures.",
+            "Failure clustering is not implemented yet (Phase 5); its count is a real zero.",
+        ])

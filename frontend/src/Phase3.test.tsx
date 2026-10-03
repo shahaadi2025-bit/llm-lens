@@ -47,6 +47,6 @@ test("dashboard shows real counts, demo warning and honest zeros", async () => {
   renderAt("/dashboard");
   expect(await screen.findByText("Experiments completed")).toBeInTheDocument();
   expect(screen.getByText("3 created")).toBeInTheDocument();
-  expect(screen.getByText(/Detection arrives in Phase 4/)).toBeInTheDocument();
+  expect(screen.getByText(/Distinct flagged runs, not confirmed failures/)).toBeInTheDocument();
   expect(screen.getAllByText(/DEMO \/ MOCK/).length).toBeGreaterThan(0);
 });

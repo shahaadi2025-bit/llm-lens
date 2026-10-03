@@ -6,7 +6,7 @@ Every Metric is linked through MetricEvidence to the runs it was computed from, 
 import uuid
 from dataclasses import dataclass
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.experiments.registry import get_experiment_type
@@ -23,6 +23,9 @@ class EvaluatedRow:
     passed: bool
     empty: bool
     latency_ms: float | None
+    response_chars: int = 0
+    completion_tokens: int | None = None
+    variant_params: dict | None = None
 
 
 async def load_rows(session: AsyncSession, experiment_id: uuid.UUID, task_type: str) -> list[EvaluatedRow]:
@@ -30,16 +33,18 @@ async def load_rows(session: AsyncSession, experiment_id: uuid.UUID, task_type: 
         etype = get_experiment_type(task_type)
     except KeyError:
         etype = None
-    q = (select(ExperimentRun.id, ExperimentRun.latency_ms, Prompt.variant_params, Evaluation.passed, Response.is_empty)
+    q = (select(ExperimentRun.id, ExperimentRun.latency_ms, Prompt.variant_params, Evaluation.passed, Response.is_empty,
+                func.length(Response.text), ExperimentRun.completion_tokens)
          .join(Prompt, Prompt.run_id == ExperimentRun.id)
          .join(Evaluation, Evaluation.run_id == ExperimentRun.id)
          .join(Response, Response.run_id == ExperimentRun.id)
          .where(ExperimentRun.experiment_id == experiment_id, ExperimentRun.status == RunStatus.SUCCEEDED.value)
          .order_by(ExperimentRun.run_index))
     rows = []
-    for run_id, latency, params, passed, empty in (await session.execute(q)).all():
+    for run_id, latency, params, passed, empty, chars, toks in (await session.execute(q)).all():
         rows.append(EvaluatedRow(run_id, etype.group_of(params) if etype else None,
-                                 etype.block_of(params) if etype else None, bool(passed), bool(empty), latency))
+                                 etype.block_of(params) if etype else None, bool(passed), bool(empty), latency,
+                                 int(chars or 0), toks, params))
     return rows
 
 

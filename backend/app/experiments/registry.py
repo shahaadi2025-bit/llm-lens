@@ -1,7 +1,8 @@
 from app.experiments.types.arithmetic import ArithmeticRepresentation
 from app.experiments.types.base import ExperimentType
+from app.experiments.types.prompt_sensitivity import PromptSensitivity
 
-_TYPES: dict[str, ExperimentType] = {t.task_type: t for t in (ArithmeticRepresentation(),)}
+_TYPES: dict[str, ExperimentType] = {t.task_type: t for t in (ArithmeticRepresentation(), PromptSensitivity())}
 
 
 def get_experiment_type(task_type: str) -> ExperimentType:
