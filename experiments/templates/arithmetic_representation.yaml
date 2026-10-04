@@ -1,0 +1,15 @@
+# Does the correctness of an answer to the same multiplication change with how the problem is written?
+name: Arithmetic representation sensitivity
+task_type: arithmetic_representation
+research_question: >-
+  Does the correctness of a model's answer to the same multiplication change with the surface representation of the
+  problem (operand order, operator symbol, wording)?
+hypothesis: >-
+  Untested: accuracy differs between forms for at least some operand pairs. The null (no difference) is equally plausible.
+model: mock-deterministic-v1   # remove this line to use the server's configured model
+seed: 7
+repetitions: 1
+temperature: 0
+max_tokens: 64
+config:
+  n_random_pairs: 5            # 6 pairs x 6 forms = 36 runs

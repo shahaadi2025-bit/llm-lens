@@ -1,0 +1,12 @@
+# Does a controlled change to the prompt's surface form change correctness?
+name: Prompt sensitivity (paraphrase, case, formatting, order, distractor, example)
+task_type: prompt_sensitivity
+research_question: >-
+  Does the correctness of a model's answer to the same multiplication change when the prompt's surface form is changed?
+model: mock-deterministic-v1
+seed: 7
+repetitions: 1
+temperature: 0
+max_tokens: 64
+config:
+  n_random_pairs: 3            # 4 problems x 9 forms = 36 runs

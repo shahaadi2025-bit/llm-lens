@@ -1,0 +1,12 @@
+# Run this and version_comparison_b.yaml (identical except the model), then:
+#   llm-lens compare mock-deterministic-v1 mock-deterministic-v2
+name: Version comparison, arithmetic (model B)
+task_type: arithmetic_representation
+research_question: Do two model versions differ in accuracy on identical multiplication prompts?
+model: mock-deterministic-v2
+seed: 11
+repetitions: 1
+temperature: 0
+max_tokens: 64
+config:
+  n_random_pairs: 5

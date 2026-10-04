@@ -1,5 +1,7 @@
 import { Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
+import { InvestigationView, Notebook } from "./pages/Notebook";
+import { ReportView, Reports } from "./pages/Reports";
 import { Account } from "./pages/Account";
 import { Compare } from "./pages/Compare";
 import { Fingerprint } from "./pages/Fingerprint";
@@ -25,6 +27,10 @@ export function App() {
         <Route path="fingerprint" element={<Fingerprint />} />
         <Route path="compare" element={<Compare />} />
         <Route path="account" element={<Account />} />
+        <Route path="reports" element={<Reports />} />
+        <Route path="reports/:id" element={<ReportView />} />
+        <Route path="notebook" element={<Notebook />} />
+        <Route path="notebook/:id" element={<InvestigationView />} />
         <Route path="models" element={<Models />} />
         <Route path="*" element={<NotFound />} />
       </Route>

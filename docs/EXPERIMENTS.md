@@ -57,3 +57,53 @@ Version comparison uses only completed experiments with an identical design (tas
 Difference interval: Newcombe hybrid-score 95% CI; effect size Cohen's h; exact McNemar on identical prompts
 (exploratory). Statements never attribute a cause. In mock mode, `mock-deterministic-v1` (15% injected errors) and
 `mock-deterministic-v2` (35%) exist so the comparison pipeline can be demonstrated; their difference is by construction.
+
+## The ten initial experiments: what exists today
+Every experiment must have a documented research question. Three are implemented; the rest are planned and listed so the
+plan is explicit. Nothing marked "planned" has any code or results.
+
+| # | Experiment | Research question | Status |
+|---|---|---|---|
+| 1 | Arithmetic representation sensitivity | Does correctness change with how the same multiplication is written? | **Implemented** (`arithmetic_representation`) |
+| 2 | Instruction ordering sensitivity | Does the order of instructions in a prompt change whether constraints are satisfied? | Planned |
+| 3 | Prompt paraphrase sensitivity | Does a controlled change to prompt wording, case, formatting or order change correctness? | **Implemented** (`prompt_sensitivity`) |
+| 4 | Long-context retrieval | Can the model retrieve a fact placed in a long context? | Planned |
+| 5 | Context-position sensitivity | Does retrieval accuracy depend on where in the context the fact sits (0% to 100%)? | Planned |
+| 6 | Repeated-answer consistency | Does the model give consistent answers to equivalent questions asked repeatedly? | Planned |
+| 7 | False-premise handling | Does the model accept, challenge or invent around a false premise? | Planned |
+| 8 | Multilingual consistency | Is behavior consistent across English, Hindi, Spanish, French, German and Chinese, allowing for translation effects? | Planned |
+| 9 | Tool-use reliability | Does the model pick the right tool and arguments, in the right format? | Planned |
+| 10 | Model-version comparison | Do two versions differ on identical prompts? | **Implemented** (matched-design comparison; templates `version_comparison_a/b.yaml`) |
+
+Because only math (M) and stability (S) experiments exist, six of the eight fingerprint dimensions are shown as not measured.
+
+## Templates and the command line
+Templates live in `experiments/templates/*.yaml` (YAML mapping; `safe_load` only; unknown keys are rejected):
+`name`, `task_type` (required), `research_question`, `hypothesis`, `model`, `seed`, `repetitions`, `temperature`,
+`max_tokens`, `evaluator`, `config`, `is_public`.
+
+```
+pip install -e backend            # installs the `llm-lens` command
+llm-lens --local health           # no server needed: own SQLite database (lens-cli.sqlite)
+llm-lens --local run experiments/templates/arithmetic_representation.yaml --report report.md
+llm-lens --local list
+llm-lens --local inspect <id> --runs
+llm-lens --local compare mock-deterministic-v1 mock-deterministic-v2
+llm-lens --local export <id> --format csv -o runs.csv
+llm-lens --api https://your-app.onrender.com login      # then use --api without --local
+```
+Without `--local` the CLI talks to any LLM Lens server (`--api` or `LLM_LENS_API`), authenticating with a token from
+`llm-lens login`, `--token` or `LLM_LENS_TOKEN`. Exit codes: 0 success, 1 experiment failed/cancelled or not comparable,
+2 usage or server error. For real models, set `MODEL_PROVIDER` and `MODEL_NAME` (for example Ollama) before running.
+
+## Reports, exports and the notebook
+- A research report has 14 fixed sections (research question, hypothesis, methodology, model, dataset, configuration,
+  results, statistical analysis, failure cases, potential explanations, alternative explanations, limitations,
+  reproducibility, conclusion). It is generated from stored data by code, not by an LLM. Statements carry an evidence
+  level; the generator never awards "supported conclusion" and never states a cause or mechanism; samples with fewer than
+  10 complete problem sets are not interpreted; mock data is labelled at the top and in the conclusion.
+- Model output placed in a report is escaped (no HTML, no table breakage). CSV cells starting with `=`, `+`, `-`, `@` are
+  prefixed with `'` so spreadsheets do not execute model output as formulas.
+- Exports: JSON bundle per experiment, CSV of runs, CSV summary of visible experiments. PDF export is not implemented.
+- Notebook: a private investigation holds a question, hypothesis, linked experiments, observations/notes/hypotheses, a
+  conclusion and its limitations. A conclusion cannot be saved without limitations.

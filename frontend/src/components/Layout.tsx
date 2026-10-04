@@ -1,4 +1,4 @@
-import { BookOpen, UserRound, Boxes, FlaskConical, Fingerprint, GitCompare, LayoutDashboard, Menu, SearchX, X } from "lucide-react";
+import { BookMarked, BookOpen, FileText, UserRound, Boxes, FlaskConical, Fingerprint, GitCompare, LayoutDashboard, Menu, SearchX, X } from "lucide-react";
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
@@ -11,6 +11,8 @@ const NAV = [
   { to: "/failures", label: "Failure analysis", icon: SearchX },
   { to: "/fingerprint", label: "Fingerprint", icon: Fingerprint },
   { to: "/compare", label: "Compare versions", icon: GitCompare },
+  { to: "/reports", label: "Reports", icon: FileText },
+  { to: "/notebook", label: "Notebook", icon: BookMarked },
   { to: "/models", label: "Models", icon: Boxes },
   { to: "/", label: "About LLM Lens", icon: BookOpen, end: true },
 ];

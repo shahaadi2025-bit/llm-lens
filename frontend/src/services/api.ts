@@ -1,6 +1,6 @@
 import type {
   Analysis, Cluster, ClusterDetail, Compare, Dashboard, Fingerprint, ModelVersion, Experiment, Explain, Failure, Lineage, ExperimentCreate, ExperimentDetail, ExperimentType, Health, Metric,
-  MetricEvidence, ModelInfo, SavedConfig, TokenResponse, User,
+  Investigation, InvestigationSummary, MetricEvidence, ModelInfo, ReportFull, ReportSummary, SavedConfig, TokenResponse, User,
 } from "../types/api";
 
 const TOKEN_KEY = "lens_token";
@@ -63,6 +63,20 @@ const post = <T,>(path: string, body?: unknown) => send<T>("POST", path, body);
 
 export const api = {
   health: () => get<Health>("/health"),
+  reports: () => get<ReportSummary[]>("/reports"),
+  report: (id: string) => get<ReportFull>(`/reports/${id}`),
+  createReport: (body: { experiment_id?: string; investigation_id?: string }) => post<ReportFull>("/reports", body),
+  deleteReport: (id: string) => send<void>("DELETE", `/reports/${id}`),
+  investigations: () => get<InvestigationSummary[]>("/investigations"),
+  investigation: (id: string) => get<Investigation>(`/investigations/${id}`),
+  createInvestigation: (b: { title: string; research_question: string; hypothesis: string }) => post<Investigation>("/investigations", b),
+  updateInvestigation: (id: string, b: Partial<Pick<Investigation, "title" | "research_question" | "hypothesis" | "conclusion" | "limitations">>) =>
+    send<Investigation>("PATCH", `/investigations/${id}`, b),
+  deleteInvestigation: (id: string) => send<void>("DELETE", `/investigations/${id}`),
+  linkExperiment: (id: string, experiment_id: string) => post<Investigation>(`/investigations/${id}/experiments`, { experiment_id }),
+  unlinkExperiment: (id: string, experiment_id: string) => send<Investigation>("DELETE", `/investigations/${id}/experiments/${experiment_id}`),
+  addNote: (id: string, kind: string, text: string) => post<Investigation>(`/investigations/${id}/notes`, { kind, text }),
+  deleteNote: (id: string, noteId: string) => send<Investigation>("DELETE", `/investigations/${id}/notes/${noteId}`),
   register: (email: string, password: string, display_name: string) =>
     post<TokenResponse>("/auth/register", { email, password, display_name }),
   login: (email: string, password: string) => post<TokenResponse>("/auth/login", { email, password }),
@@ -95,3 +109,20 @@ export const api = {
   cancelExperiment: (id: string) => post<Experiment>(`/experiments/${id}/cancel`),
   cloneExperiment: (id: string) => post<Experiment>(`/experiments/${id}/clone`),
 };
+
+/** Download a file the API serves behind auth: fetch with the token, then save the blob. */
+export async function downloadFile(path: string, filename: string): Promise<void> {
+  let res: Response;
+  try {
+    res = await fetch(`/api${path}`, { headers: authHeader() });
+  } catch {
+    throw new ApiError("Cannot reach the LLM Lens backend. Is it running?");
+  }
+  if (!res.ok) throw new ApiError(`Download failed (${res.status})`, res.status);
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}

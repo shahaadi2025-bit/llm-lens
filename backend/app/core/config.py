@@ -63,6 +63,9 @@ class Settings(BaseSettings):
     public_max_experiments_per_user: int = 30
     public_max_concurrent_experiments: int = 2
 
+    public_max_reports: int = 300
+    public_max_reports_per_user: int = 30
+
     request_timeout_s: float = 60.0
     max_concurrency: int = 4
     max_retries: int = 2

@@ -66,6 +66,9 @@ class VersionOut(BaseModel):
 @router.get("/model-versions", response_model=list[VersionOut])
 async def model_versions(session: AsyncSession = Depends(get_session),
                          user: User | None = Depends(optional_user)) -> list[VersionOut]:
+    for a in available_adapters():  # every model this server can run is listed, even before its first experiment
+        await ensure_model_version(session, a.get_model_info())
+    await session.commit()
     rows = (await session.execute(select(ModelVersion, LLMModel).join(LLMModel, LLMModel.id == ModelVersion.model_id)
                                   .order_by(LLMModel.slug, ModelVersion.version_label))).all()
     out = []

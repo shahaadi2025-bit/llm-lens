@@ -37,6 +37,8 @@ class Report(Base, IdMixin, CreatedMixin):
 
     owner_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, ForeignKey("users.id"), index=True, nullable=True)
     experiment_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, ForeignKey("experiments.id"), index=True, nullable=True)
+    investigation_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid, ForeignKey("investigations.id"), index=True, nullable=True)
     title: Mapped[str] = mapped_column(String(300))
     format: Mapped[str] = mapped_column(String(20), default="markdown")
     content: Mapped[str] = mapped_column(Text)

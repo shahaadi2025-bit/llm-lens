@@ -124,3 +124,18 @@ export interface SavedConfig {
   id: string; name: string; task_type: string; temperature: number; max_tokens: number; seed: number;
   repetitions: number; config: Record<string, unknown>; is_public: boolean; created_at: string;
 }
+
+export interface ReportSummary {
+  id: string; title: string; experiment_id: string | null; investigation_id: string | null; includes_demo_data: boolean;
+  owned_by_me: boolean; created_at: string;
+}
+export interface ReportFull extends ReportSummary { content: string; }
+export interface Note { id: string; kind: "observation" | "note" | "hypothesis"; text: string; created_at: string; }
+export interface InvestigationSummary {
+  id: string; title: string; research_question: string; n_experiments: number; n_notes: number; has_conclusion: boolean;
+  updated_at: string;
+}
+export interface Investigation {
+  id: string; title: string; research_question: string; hypothesis: string; conclusion: string; limitations: string;
+  experiments: Experiment[]; hidden_experiments: number; notes: Note[]; created_at: string; updated_at: string;
+}

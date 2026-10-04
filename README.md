@@ -4,13 +4,14 @@
 Run controlled experiments on language models treated as black boxes, then trace every metric back to
 the prompts, responses and evaluators behind it.
 
-> **Status: Phase 6 of 9.** Working: model adapters (mock, local Hugging Face, Ollama, OpenAI-compatible), experiment
+> **Status: Phase 7 of 9.** Working: model adapters (mock, local Hugging Face, Ollama, OpenAI-compatible), experiment
 > engine, deterministic evaluators, statistics, metrics with evidence traceability, prompt mutations, anomaly detection,
-> controlled follow-ups, "Explain this failure", lineage, failure clustering, behavioral fingerprint, matched-design
-> version comparison, accounts (scrypt + JWT), private/public experiments enforced on every endpoint, saved configurations,
-> public-demo limits (rate, quota, concurrency), charts, dashboard and free-hosting config.
-> Not built yet: reports, CLI, export, research notebook, remaining experiment types (6 of 8 fingerprint dimensions are empty).
-> The local Hugging Face adapter is written but has not been run against a real model yet. See [docs/SECURITY.md](docs/SECURITY.md).
+> controlled follow-ups, "Explain this failure", lineage, failure clustering, behavioral fingerprint, matched-design version
+> comparison, accounts and enforced private/public experiments, public-demo limits, research reports (14 sections), JSON/CSV
+> export, a private research notebook, the `llm-lens` command line tool, charts, dashboard and free-hosting config.
+> Not built yet: the remaining experiment types (so 6 of 8 fingerprint dimensions are empty), PDF export, final polish,
+> screenshots and the resume document. The local Hugging Face adapter has not been run against a real model yet.
+> See [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) for the ten planned experiments and which exist.
 
 ## Quick start (local)
 ```bash
@@ -28,6 +29,8 @@ DATABASE_URL=sqlite+aiosqlite:///./lens-dev.sqlite uvicorn app.main:app --reload
 cd frontend && npm install && npm run dev      # http://localhost:5173
 ```
 Tests: `cd backend && pytest` and `cd frontend && npm test`.
+
+Command line (no server needed): `pip install -e backend`, then `llm-lens --local run experiments/templates/arithmetic_representation.yaml`.
 
 ## Public deployment (free tiers)
 See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md): one Docker service on Render + Neon PostgreSQL, using `render.yaml`.

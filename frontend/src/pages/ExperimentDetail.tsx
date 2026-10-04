@@ -5,7 +5,7 @@ import { LineageView } from "../components/LineageView";
 import { AnalysisPanel } from "../components/AnalysisPanel";
 import { MetricsPanel } from "../components/MetricsPanel";
 import { DemoTag, Status } from "../components/Status";
-import { api } from "../services/api";
+import { api, downloadFile } from "../services/api";
 
 export function ExperimentDetail() {
   const { id = "" } = useParams();
@@ -19,12 +19,14 @@ export function ExperimentDetail() {
   const run = useMutation({ mutationFn: () => api.runExperiment(id), onSuccess: refresh });
   const cancel = useMutation({ mutationFn: () => api.cancelExperiment(id), onSuccess: refresh });
   const visibility = useMutation({ mutationFn: (pub: boolean) => api.setVisibility(id, pub), onSuccess: refresh });
+  const report = useMutation({ mutationFn: () => api.createReport({ experiment_id: id }), onSuccess: (r) => nav(`/reports/${r.id}`) });
+  const exportFile = useMutation({ mutationFn: (kind: "json" | "csv") => kind === "json" ? downloadFile(`/exports/experiments/${id}.json`, "experiment.json") : downloadFile(`/exports/experiments/${id}/runs.csv`, "runs.csv") });
   const clone = useMutation({ mutationFn: () => api.cloneExperiment(id), onSuccess: (c) => nav(`/experiments/${c.id}`) });
 
   if (error) return <p role="alert" className="rounded bg-signal-wash p-3 text-sm text-signal">{(error as Error).message}</p>;
   if (!d) return <p className="text-sm text-ink-soft">Loading…</p>;
   const btn = "rounded border border-rule px-3 py-1.5 text-sm hover:bg-panel disabled:opacity-50";
-  const actionError = (run.error ?? cancel.error ?? clone.error ?? visibility.error) as Error | null;
+  const actionError = (run.error ?? cancel.error ?? clone.error ?? visibility.error ?? report.error ?? exportFile.error) as Error | null;
   const canModify = d.owned_by_me || !d.is_public;  // visible + not mine + not public = anonymous demo sandbox
   const scope = d.owned_by_me ? (d.is_public ? "Public" : "Private") : d.is_public ? "Public (read-only)" : "Shared demo sandbox";
 
@@ -44,6 +46,9 @@ export function ExperimentDetail() {
           </button>
           <button className={btn} disabled={!canModify || (d.status !== "running" && d.status !== "pending")} onClick={() => cancel.mutate()}>Cancel</button>
           <button className={btn} onClick={() => clone.mutate()}>Clone experiment</button>
+          <button className={btn} disabled={d.counts.succeeded === 0 || report.isPending} onClick={() => report.mutate()}>Generate research report</button>
+          <button className={btn} onClick={() => exportFile.mutate("json")}>Export JSON</button>
+          <button className={btn} onClick={() => exportFile.mutate("csv")}>Export CSV</button>
           {d.owned_by_me && <button className={btn} disabled={visibility.isPending} onClick={() => visibility.mutate(!d.is_public)}>{d.is_public ? "Make private" : "Make public"}</button>}
         </div>
       </header>
