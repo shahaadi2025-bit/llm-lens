@@ -82,11 +82,15 @@ async def create_experiment(
     try:
         get_evaluator(evaluator_name)
         config = etype.validate_config(spec.config)
+        etype.validate_for_model(config, info.context_length)
         items = etype.build_items(config, spec.seed)
     except (KeyError, ConfigError) as exc:
         raise ServiceError(str(exc)) from exc
 
     total = len(items) * spec.repetitions
+    chars = sum(len(i.prompt) for i in items) * spec.repetitions
+    if chars > settings.effective_max_prompt_chars:
+        raise TooLarge(f"{chars:,} prompt characters exceeds the limit of {settings.effective_max_prompt_chars:,} for this deployment.")
     if total > settings.effective_max_runs:
         raise TooLarge(f"{total} runs exceeds the limit of {settings.effective_max_runs} for this deployment.")
 

@@ -7,7 +7,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.router import api_router
 from app.core.config import APP_VERSION, Settings, get_settings
 from app.core.db import dispose_engine
-from app.core.security import RateLimitMiddleware, SecurityHeadersMiddleware
+from app.core.security import (
+    BodyLimitMiddleware,
+    RateLimitMiddleware,
+    SecurityHeadersMiddleware,
+    install_log_redaction,
+)
 from app.core.spa import mount_frontend
 
 
@@ -20,6 +25,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
+    install_log_redaction()
     app = FastAPI(
         title="LLM Lens API",
         version=APP_VERSION,
@@ -32,7 +38,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.add_middleware(RateLimitMiddleware, limit_per_minute=settings.public_rate_limit_per_minute)
     # Login/register are always throttled (any mode): this is the brute-force defence.
     app.add_middleware(RateLimitMiddleware, limit_per_minute=settings.auth_rate_limit_per_minute, path_prefix="/api/auth/")
-    app.add_middleware(SecurityHeadersMiddleware)
+    app.add_middleware(SecurityHeadersMiddleware, hsts=settings.app_env == "production")
+    app.add_middleware(BodyLimitMiddleware, max_bytes=settings.max_request_bytes)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origin_list,

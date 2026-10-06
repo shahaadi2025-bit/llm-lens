@@ -1,0 +1,14 @@
+# Does the order in which verifiable instructions are listed change how often all of them are satisfied?
+name: Instruction ordering sensitivity
+task_type: instruction_ordering
+research_question: >-
+  Does the model satisfy the same set of verifiable instructions equally often when the instructions are listed in a
+  different order?
+model: mock-deterministic-v1   # remove this line to use the server's configured model
+seed: 3
+repetitions: 1
+temperature: 0
+max_tokens: 160
+config:
+  n_tasks: 10                  # 10 tasks x 4 orderings = 40 runs
+  n_constraints: 3

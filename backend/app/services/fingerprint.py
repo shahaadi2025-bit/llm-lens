@@ -17,6 +17,8 @@ DIMENSIONS = {
     "I": "Instruction following", "H": "Hallucination indicators", "T": "Tool use", "S": "Stability",
 }
 HOW = {
+    "I": "Share of answers satisfying every one of several machine-checkable instructions, listed in different orders.",
+    "C": "Accuracy retrieving a hidden fact (with decoys) from contexts of controlled length and fact position.",
     "M": "Accuracy on multiplication asked in several equivalent forms (arithmetic representation sensitivity).",
     "S": "Accuracy when the same problems are asked with controlled prompt mutations (prompt sensitivity).",
 }

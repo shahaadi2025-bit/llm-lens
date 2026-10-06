@@ -90,14 +90,25 @@ async def experiment_bundle(session: AsyncSession, exp: Experiment) -> dict[str,
 
 
 async def summary_csv(session: AsyncSession, exps: list[Experiment]) -> str:
+    """Batch-loaded: a fixed number of queries however many experiments are exported."""
+    from sqlalchemy import func
+
+    ids = [e.id for e in exps]
+    versions = {mv.id: mv for mv in (await session.execute(select(ModelVersion).where(
+        ModelVersion.id.in_({e.model_version_id for e in exps})))).scalars()} if exps else {}
+    models = {m.id: m for m in (await session.execute(select(LLMModel).where(
+        LLMModel.id.in_({v.model_id for v in versions.values()})))).scalars()} if versions else {}
+    acc = {m.experiment_id: m for m in (await session.execute(select(Metric).where(
+        Metric.name == "accuracy", Metric.experiment_id.in_(ids)))).scalars()} if ids else {}
+    n_runs = dict((await session.execute(select(ExperimentRun.experiment_id, func.count()).where(
+        ExperimentRun.experiment_id.in_(ids)).group_by(ExperimentRun.experiment_id))).all()) if ids else {}
     rows = []
     for e in exps:
-        mv = await session.get(ModelVersion, e.model_version_id)
-        model = await session.get(LLMModel, mv.model_id) if mv else None
-        acc = (await session.execute(select(Metric).where(Metric.experiment_id == e.id, Metric.name == "accuracy"))).scalar_one_or_none()
-        n_runs = len(list((await session.execute(select(ExperimentRun.id).where(ExperimentRun.experiment_id == e.id))).scalars()))
+        mv = versions.get(e.model_version_id)
+        model = models.get(mv.model_id) if mv else None
+        a = acc.get(e.id)
         rows.append([str(e.id), e.name, e.status, e.task_type, model.slug if model else "", mv.version_label if mv else "",
-                     "yes" if e.is_demo_data else "no", n_runs, acc.n if acc else 0, acc.value if acc else "",
-                     acc.ci_low if acc else "", acc.ci_high if acc else "", e.seed, e.created_at.isoformat()])
+                     "yes" if e.is_demo_data else "no", n_runs.get(e.id, 0), a.n if a else 0, a.value if a else "",
+                     a.ci_low if a else "", a.ci_high if a else "", e.seed, e.created_at.isoformat()])
     return to_csv(["id", "name", "status", "task_type", "model", "version", "mock_data", "runs", "evaluated_runs", "accuracy",
                    "ci_low_95", "ci_high_95", "seed", "created_at"], rows)

@@ -57,3 +57,25 @@ One service means one URL and no CORS configuration. Components are still separa
 Hugging Face Docker Spaces, Koyeb and Fly.io no longer offer card-free free container hosting; Supabase free
 projects pause after a week idle; Render's own free Postgres expires after 30 days. See the research notes in the
 project chat for sources.
+
+## After each deploy
+```
+python scripts/smoke_test.py https://your-app.onrender.com
+```
+Ten checks (health, website, current API, create, run, metrics with evidence, report, CSV, follow-up, verdict). It creates one
+small demo experiment. For a browser check: `cd e2e && npm i && BASE_URL=https://your-app.onrender.com node e2e.mjs`
+(on Windows set `CHROME_PATH` to your Chrome or Edge executable).
+
+## Seeding demo data
+On a mock-mode deployment: `llm-lens --api https://your-app.onrender.com seed-demo`. It creates three small experiments, a
+follow-up, clusters and a report, all labelled DEMO / MOCK DATA.
+
+## Rollback and backups
+- Render keeps previous deploys; roll back from the service's Deploys tab. Migrations are forward-only here, so a rollback
+  across a migration needs a manual downgrade (`alembic downgrade -1`) against the database first.
+- Check your database provider's backup or point-in-time-restore options and retention for the plan you use; this project
+  does not manage backups and does not assume any.
+
+## CI
+`.github/workflows/ci.yml` runs lint, types, tests with coverage, dependency audits, the secret scan, the browser e2e and a
+Docker build. It has not yet run on GitHub: expect to fix small environment differences on the first run.

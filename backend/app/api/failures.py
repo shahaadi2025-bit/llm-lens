@@ -14,7 +14,7 @@ from app.models import Experiment, ExperimentLineage, ExperimentRun, FailureMode
 from app.schemas.experiment import ExperimentOut
 from app.schemas.failures import ExplainOut, FailureOut, FollowUpRequest, LineageEdge, LineageNode, LineageOut
 from app.services.access import can_see, get_modifiable, get_visible, visible
-from app.services.explain import explain, failure_out, lineage
+from app.services.explain import explain, failure_outs, lineage
 
 router = APIRouter(tags=["failures"])
 
@@ -34,7 +34,7 @@ async def list_failures(
         stmt = stmt.where(FailureMode.status == status)
     if label:
         stmt = stmt.where(FailureMode.label == label)
-    return [await failure_out(session, f) for f in (await session.execute(stmt)).scalars()]
+    return await failure_outs(session, list((await session.execute(stmt)).scalars()))
 
 
 @router.get("/failures/{failure_id}/explain", response_model=ExplainOut)

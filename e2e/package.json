@@ -1,0 +1,9 @@
+{
+  "name": "llm-lens-e2e",
+  "private": true,
+  "type": "module",
+  "description": "Browser end-to-end tests and responsive audit. Run against a running LLM Lens (local or deployed).",
+  "scripts": { "e2e": "node e2e.mjs", "audit": "node audit.mjs" },
+  "dependencies": { "puppeteer-core": "^23.0.0" },
+  "optionalDependencies": { "@sparticuz/chromium": "^131.0.0" }
+}

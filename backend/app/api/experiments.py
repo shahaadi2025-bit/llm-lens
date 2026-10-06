@@ -57,10 +57,14 @@ async def _counts(session: AsyncSession, ids: list[uuid.UUID]) -> dict[uuid.UUID
 
 async def _summaries(session: AsyncSession, exps: list[Experiment], user: User | None = None) -> list[ExperimentOut]:
     counts = await _counts(session, [e.id for e in exps])
+    versions = {v.id: v for v in (await session.execute(select(ModelVersion).where(
+        ModelVersion.id.in_({e.model_version_id for e in exps})))).scalars()} if exps else {}
+    models = {m.id: m for m in (await session.execute(select(LLMModel).where(
+        LLMModel.id.in_({v.model_id for v in versions.values()})))).scalars()} if versions else {}
     result = []
     for e in exps:
-        mv = await session.get(ModelVersion, e.model_version_id)
-        model = await session.get(LLMModel, mv.model_id) if mv else None
+        mv = versions.get(e.model_version_id)
+        model = models.get(mv.model_id) if mv else None
         result.append(ExperimentOut(
             id=e.id, name=e.name, research_question=e.research_question, hypothesis=e.hypothesis,
             task_type=e.task_type, status=e.status, model_slug=model.slug if model else "?",
@@ -153,8 +157,9 @@ async def list_experiments(
     if task_type:
         stmt = stmt.where(Experiment.task_type == task_type)
     if q:
-        like = f"%{q}%"
-        stmt = stmt.where(or_(Experiment.name.ilike(like), Experiment.research_question.ilike(like)))
+        escaped = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")  # '%' and '_' in input are literals
+        like = f"%{escaped}%"
+        stmt = stmt.where(or_(Experiment.name.ilike(like, escape="\\"), Experiment.research_question.ilike(like, escape="\\")))
     return await _summaries(session, list((await session.execute(stmt)).scalars()), user)
 
 

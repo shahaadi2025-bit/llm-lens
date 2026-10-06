@@ -1,0 +1,13 @@
+# Does retrieval accuracy change as the context gets longer?
+name: Context-length behavior
+task_type: context_length
+research_question: Does the model's accuracy at retrieving a fact change as the surrounding context gets longer?
+model: mock-deterministic-v1
+seed: 8
+repetitions: 1
+temperature: 0
+max_tokens: 32
+config:
+  sizes_tokens: [500, 1000, 2000, 3000]   # sizes the model cannot fit are rejected
+  n_trials: 3                             # 4 sizes x 3 trials = 12 runs
+  n_decoys: 2

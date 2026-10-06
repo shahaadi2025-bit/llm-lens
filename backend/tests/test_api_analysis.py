@@ -54,3 +54,14 @@ async def test_dashboard_reports_real_counts_only(client):
     assert d["potential_anomalies"] == len(flagged) > 0  # counted per distinct run, from real detections
     assert d["failure_clusters"] == 0 and d["includes_demo_data"] is True
     assert d["recent"][0]["counts"]["succeeded"] == 72 and d["notes"]
+
+
+async def test_metrics_are_not_computed_lazily_while_an_experiment_has_not_finished(client):
+    exp = (await client.post("/api/experiments", json=BODY)).json()  # pending: never run
+    assert (await client.get(f"/api/experiments/{exp['id']}/metrics")).json() == []
+    from sqlalchemy import func, select
+
+    from app.models import Metric
+
+    async for s in client._transport.app.dependency_overrides[__import__("app.core.db", fromlist=["x"]).get_session]():  # noqa: SLF001
+        assert (await s.execute(select(func.count()).select_from(Metric))).scalar_one() == 0  # nothing was written

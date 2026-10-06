@@ -1,8 +1,9 @@
 from app.evaluators.base import Evaluator
+from app.evaluators.constraints import ConstraintCheck
 from app.evaluators.exact import ExactMatch
 from app.evaluators.numeric import NumericMatch
 
-_EVALUATORS: dict[str, Evaluator] = {e.name: e for e in (ExactMatch(), NumericMatch())}
+_EVALUATORS: dict[str, Evaluator] = {e.name: e for e in (ExactMatch(), NumericMatch(), ConstraintCheck())}
 
 
 def get_evaluator(name: str) -> Evaluator:

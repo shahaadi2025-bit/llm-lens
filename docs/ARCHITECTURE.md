@@ -45,9 +45,9 @@ Traceability chain: `metrics -> metric_evidence -> experiment_runs -> prompts / 
 Lineage: `experiment_lineage(parent, child, trigger_run, relation)` forms the investigation graph.
 `experiments.is_demo_data` marks rows that are NOT real LLM evidence; reports carry `includes_demo_data`.
 Evaluations store judge model, prompt, version and criteria when `kind = llm_judge`.
-Planned for Phase 7: notebook tables (investigations, notes).
+Notebook: investigations, investigation_experiments, investigation_notes (private to the owner). Reports link to an experiment or an investigation.
 
-## 6. Core interfaces (Phase 2)
+## 6. Core interfaces
 - `ModelAdapter`: `generate()`, `stream()`, `get_model_info()`, `estimate_tokens()`.
 - `Evaluator`: `evaluate(prompt, response, expected) -> Evaluation` (deterministic ones first).
 - `ExperimentType`: builds prompt variants, picks evaluator, defines metrics and fingerprint dimension.
@@ -60,14 +60,14 @@ get, run, clone, follow-up), models, fingerprints, failures, failure-clusters, r
 Frontend, backend, database and inference are independent components, each replaceable.
 - Local: `docker compose up --build` (nginx, FastAPI, PostgreSQL); optional local inference.
 - Public demo: static/nginx frontend + container backend + hosted PostgreSQL + mock or small hosted model.
-Free tiers change; `DEPLOYMENT.md` (Phase 8) will record the process as of its writing and make no permanence claims.
+Free tiers change; `DEPLOYMENT.md` records the process as of its writing and makes no permanence claims.
 
 ## 9. Security model
 See [SECURITY.md](SECURITY.md): scrypt password hashing, HS256 JWT sessions, visibility enforced centrally for every endpoint,
 per-IP and per-account abuse limits in public mode, production refuses a weak `SECRET_KEY`.
 
 ## 10. Milestones
-Phases 1-9 as in the project brief. Done: Phase 1 (skeleton, schema, Docker, health), Phase 2 (adapters, engine, evaluators, first experiment), Phase 3 (statistics, metrics + evidence, charts, dashboard), Phase 4 (prompt mutation, anomaly detection, follow-ups, explain, lineage), Phase 5 (clustering, fingerprint, version comparison), Phase 6 (accounts, authorization, public-mode limits), Phase 7 (reports, exports, notebook, CLI).
+Phases 1-9 of the project brief are complete as far as documented in [STATUS.md](STATUS.md), which separates what is verified from what is only written.
 
 ## 11. Risks and mitigations
 | Risk | Mitigation |

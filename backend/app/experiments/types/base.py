@@ -34,6 +34,10 @@ class ExperimentType(ABC):
         """The underlying problem instance, shared across forms (enables paired analysis)."""
         return None
 
+    def validate_for_model(self, config: dict[str, Any], context_length: int) -> None:
+        """Reject settings the chosen model cannot support (e.g. a context larger than its window). Default: no limits."""
+        return None
+
     @abstractmethod
     def validate_config(self, config: dict[str, Any]) -> dict[str, Any]:
         """Return a fully-populated, validated config (defaults filled in) or raise ConfigError."""

@@ -34,6 +34,22 @@ correct for one free-tier container, not for several replicas (use Redis then).
 Security headers, CORS allow-list, request validation (Pydantic), no secrets in the frontend or the repository, `.env`
 ignored by Git. Database passwords belong in the host's environment settings only.
 
+## Transport and browser hardening
+- Content-Security-Policy on the app's pages (`script-src 'self'`, no inline script, `frame-ancestors 'none'`, `object-src 'none'`);
+  the API's Swagger page is exempt because it loads a CDN script.
+- Strict-Transport-Security in production; `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`.
+- Request bodies over 1 MB are refused with 413, whether declared in Content-Length or streamed.
+- Log lines are scrubbed of bearer tokens, passwords, API keys and database URL passwords before any handler sees them.
+- Production refuses to start with a weak `SECRET_KEY` or a wildcard `CORS_ORIGINS`.
+- Search input treats `%` and `_` as literal characters; all queries are parameterised.
+- CSV exports neutralise formula cells; reports escape HTML in model output; the Markdown viewer renders React elements only.
+
+## Dependency audit (October 2026)
+`pip-audit` on `requirements.txt`: no known vulnerabilities. `npm audit --omit=dev`: 0 after upgrading `react-router-dom` to
+the patched 7.x. `npm audit` still lists advisories in development tooling (the Vite dev server, Vitest and related
+packages). They affect only a developer running the dev server or tests, and none of that code is in the production image
+(the Docker build ships the compiled bundle only). Re-run both audits before each release; CI does.
+
 ## Not covered (known gaps)
 Email verification, password reset, account deletion, two-factor authentication, audit logging, per-account (rather than
 per-IP) rate limits, and token revocation before expiry.

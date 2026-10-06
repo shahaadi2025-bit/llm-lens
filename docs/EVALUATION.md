@@ -6,6 +6,7 @@ Deterministic evaluators are preferred wherever the answer can be checked by cod
 |---|---|---|
 | `exact_match` | deterministic | whitespace/case-insensitive equality |
 | `numeric_match` | deterministic | last number in the response equals the expected number exactly |
+| `constraint_check` | deterministic | JSON list of constraints (word limit, include/exclude word, lowercase, starts/ends with, sentence count); score = fraction satisfied, pass = all |
 
 `numeric_match` known limitation: a correct number followed by an unrelated number is scored incorrect. The
 extraction rule is stored in each evaluation's `details`.

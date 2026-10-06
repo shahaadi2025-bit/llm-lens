@@ -63,6 +63,9 @@ class Settings(BaseSettings):
     public_max_experiments_per_user: int = 30
     public_max_concurrent_experiments: int = 2
 
+    max_request_bytes: int = 1_000_000
+    max_prompt_chars: int = 6_000_000  # total across one experiment's prompts (long-context experiments are large)
+    public_max_prompt_chars: int = 600_000
     public_max_reports: int = 300
     public_max_reports_per_user: int = 30
 
@@ -84,6 +87,10 @@ class Settings(BaseSettings):
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
     @property
+    def effective_max_prompt_chars(self) -> int:
+        return self.public_max_prompt_chars if self.public_demo_mode else self.max_prompt_chars
+
+    @property
     def effective_max_runs(self) -> int:
         return self.public_max_runs_per_experiment if self.public_demo_mode else self.max_runs_per_experiment
 
@@ -96,6 +103,8 @@ class Settings(BaseSettings):
         weak = self.secret_key.startswith(("dev-", "change-me")) or len(self.secret_key) < 32
         if self.app_env == "production" and weak:
             raise RuntimeError("SECRET_KEY must be a random value of at least 32 characters in production.")
+        if self.app_env == "production" and "*" in self.cors_origin_list:
+            raise RuntimeError("CORS_ORIGINS must list explicit origins in production, not '*'.")
 
 
 @lru_cache

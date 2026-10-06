@@ -13,7 +13,7 @@ SMALL = {"name": "cli small", "task_type": "arithmetic_representation", "model":
 
 
 @pytest.fixture
-def cli(tmp_path, monkeypatch, capsys):
+def cli(tmp_path, monkeypatch, capsys):  # noqa: ANN201
     """Returns run(*argv) -> (exit_code, stdout, stderr), isolated to a temp database."""
     monkeypatch.setenv("DATABASE_URL", f"sqlite+aiosqlite:///{tmp_path / 'x.sqlite'}")  # restored after the test
     monkeypatch.setenv("MODEL_PROVIDER", "mock")
@@ -28,7 +28,13 @@ def cli(tmp_path, monkeypatch, capsys):
         out = capsys.readouterr()
         return code, out.out, out.err
 
-    return run
+    yield run
+    # The CLI's local mode caches settings built from this test's environment; never let that leak into other tests.
+    from app.api.deps import get_adapter, get_engine
+    from app.core.config import get_settings
+
+    for fn in (get_settings, get_adapter, get_engine):
+        fn.cache_clear()
 
 
 def write_template(tmp_path: Path, **over) -> str:
@@ -119,7 +125,24 @@ def test_templates_are_validated_and_parsed_safely(tmp_path):
 def test_shipped_templates_are_valid():
     root = Path(__file__).resolve().parents[2] / "experiments" / "templates"
     files = sorted(root.glob("*.yaml"))
-    assert len(files) >= 4
+    assert len(files) >= 7
     for f in files:
         body = load_template(str(f))
-        assert body["task_type"] in ("arithmetic_representation", "prompt_sensitivity") and body.get("research_question")
+        assert body["task_type"] in ("arithmetic_representation", "prompt_sensitivity", "instruction_ordering", "context_position",
+                                     "context_length") and body.get("research_question")
+
+
+def test_seed_demo_populates_every_page_idempotently_and_labels_it(cli):
+    code, out, err = cli("seed-demo")
+    assert code == 0, err
+    assert out.count("created  ") >= 7 and "follow-up experiment" in out and "research report" in out and "DEMO / MOCK DATA" in out
+    code, out, _ = cli("list")
+    assert out.count("[DEMO]") == out.count("Demo: ") >= 3 or "Demo: " in out
+    code, out, _ = cli("seed-demo")  # second run: nothing new
+    assert code == 0 and "demo data already present" in out and "created" not in out
+
+
+def test_seed_demo_refuses_on_a_real_model_deployment(cli, monkeypatch):
+    monkeypatch.setenv("MODEL_PROVIDER", "ollama")
+    code, _, err = cli("seed-demo")
+    assert code == 2 and "only seeded on mock deployments" in err

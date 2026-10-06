@@ -26,7 +26,7 @@ export function Dashboard() {
             <Stat label="Experiments completed" value={data.experiments_completed} note={`${data.experiments_total} created`} />
             <Stat label="Models tested" value={data.models_tested} />
             <Stat label="Potential anomalies" value={data.potential_anomalies} note="Distinct flagged runs, not confirmed failures" />
-            <Stat label="Failure clusters" value={data.failure_clusters} note="Clustering arrives in Phase 5" />
+            <Stat label="Failure clusters" value={data.failure_clusters} note="Groups of similar incorrect answers" />
           </dl>
           {data.includes_demo_data && (
             <p className="rounded bg-demo-wash p-3 text-sm text-demo">

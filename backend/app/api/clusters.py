@@ -12,7 +12,7 @@ from app.models import Experiment, ExperimentRun, FailureCluster, FailureMode, U
 from app.schemas.clusters import ClusterDetail, ClusterOut
 from app.services.access import visible
 from app.services.clustering import recompute_clusters
-from app.services.explain import failure_out
+from app.services.explain import failure_outs
 
 router = APIRouter(tags=["clusters"])
 NOTE = "Clusters group similar-looking incorrect answers. They describe the outputs, not why the model produced them."
@@ -76,4 +76,4 @@ async def get_cluster(cluster_id: uuid.UUID, limit: int = Query(default=100, ge=
     if base is None:
         raise HTTPException(404, "cluster not found")
     members = await _members(session, fc.id, user, limit)
-    return ClusterDetail(**base.model_dump(), members=[await failure_out(session, m) for m in members])
+    return ClusterDetail(**base.model_dump(), members=await failure_outs(session, members))

@@ -13,7 +13,7 @@ Each operand pair (the anchor pair 37 and 84, plus seeded random 2-digit pairs) 
 Evaluator: `numeric_match` (deterministic, last number in the response, exact comparison).
 
 **Interpretation limits:** a difference between forms is an observation about one model on these prompts. It does
-not identify an internal cause, and with few pairs it may be noise. Statistics with intervals arrive in Phase 3.
+not identify an internal cause, and with few pairs it may be noise. Every result carries an interval (see REPRODUCIBILITY.md).
 
 ## prompt_sensitivity (implemented)
 **Research question:** Does the correctness of a model's answer to the same multiplication change when the prompt's
@@ -35,10 +35,28 @@ Wilson 95% lower bound exceeds the other forms' failure rate; strength strong / 
 (>= 0.6 / >= 0.4 / otherwise). Even a reproduced result is labelled `correlation`, never a supported conclusion, and
 never an internal mechanism.
 
-Planned types (not implemented): instruction following, context length, long-context
+Planned types (not implemented, see the table at the end): instruction following, context length, long-context
 retrieval, consistency, multilingual, false premise, tool use.
 
-## Failure clustering (Phase 5)
+## instruction_ordering (implemented)
+**Research question:** Does the model satisfy the same set of verifiable instructions equally often when they are listed in a
+different order? Each task has 2 to 5 machine-checkable constraints (word limit, required or forbidden word, lowercase,
+opening text, closing text, sentence count). The same constraints are presented as listed, reversed, rotated and shuffled.
+Evaluator `constraint_check` (deterministic): score = fraction satisfied; an answer passes only if every constraint holds.
+Fingerprint dimension I. Analysis: Cochran's Q across orderings over the same tasks.
+
+## context_position and context_length (implemented)
+**context_position:** does retrieval accuracy depend on where in a long context a fact sits (0, 10, 25, 50, 75, 90, 100 percent)?
+**context_length:** does it change as the context gets longer? A target fact (an access code for one named vault) is placed
+among digit-free filler sentences and decoy facts about other vaults; the answer is checked exactly (`numeric_match`).
+Sizes are approximate tokens (about 4 characters each). A size the chosen model's window cannot fit is rejected at creation
+and never attempted. Total prompt characters are capped per deployment. Fingerprint dimension C. Charts list positions and
+sizes in numeric order, and the analysis refuses to interpret fewer than 10 complete trials.
+
+**Mock behavior:** in mock mode both new types are answered by a stand-in that slips at a uniform pseudo-random rate. It has
+**no** ordering or position effect built in, so any pattern a real model shows will be its own.
+
+## Failure clustering
 `POST /api/failure-clusters/recompute` clusters every incorrect answer (up to the newest 2000). Each answer is first
 classified by a rule-based taxonomy (`empty_response`, `no_numeric_answer`, `numeric_near_miss` within 1%,
 `numeric_far_miss`, `wrong_text`). Text is embedded (default: character n-gram TF-IDF with digits masked, which needs no
@@ -49,7 +67,7 @@ Cluster labels are computed from member facts (dominant error type and form); th
 Only error types observable today exist; instruction-order, long-context, hallucination, contradiction and tool-use
 clusters need their experiment types first.
 
-## Fingerprint and comparison (Phase 5)
+## Fingerprint and comparison
 Fingerprint dimensions: R M F C I H T S. Today M (arithmetic representation) and S (prompt sensitivity) can be measured;
 the others are shown as "not measured", never as 0. Each measured dimension pools accuracy metrics (Wilson 95%) and links
 to the experiments, then the runs, behind it.
@@ -59,23 +77,23 @@ Difference interval: Newcombe hybrid-score 95% CI; effect size Cohen's h; exact 
 `mock-deterministic-v2` (35%) exist so the comparison pipeline can be demonstrated; their difference is by construction.
 
 ## The ten initial experiments: what exists today
-Every experiment must have a documented research question. Three are implemented; the rest are planned and listed so the
+Every experiment must have a documented research question. Six are implemented; the rest are planned and listed so the
 plan is explicit. Nothing marked "planned" has any code or results.
 
 | # | Experiment | Research question | Status |
 |---|---|---|---|
 | 1 | Arithmetic representation sensitivity | Does correctness change with how the same multiplication is written? | **Implemented** (`arithmetic_representation`) |
-| 2 | Instruction ordering sensitivity | Does the order of instructions in a prompt change whether constraints are satisfied? | Planned |
+| 2 | Instruction ordering sensitivity | Does the order of instructions in a prompt change whether constraints are satisfied? | **Implemented** (`instruction_ordering`) |
 | 3 | Prompt paraphrase sensitivity | Does a controlled change to prompt wording, case, formatting or order change correctness? | **Implemented** (`prompt_sensitivity`) |
-| 4 | Long-context retrieval | Can the model retrieve a fact placed in a long context? | Planned |
-| 5 | Context-position sensitivity | Does retrieval accuracy depend on where in the context the fact sits (0% to 100%)? | Planned |
+| 4 | Long-context retrieval | Does retrieval accuracy change as the context gets longer? | **Implemented** (`context_length`) |
+| 5 | Context-position sensitivity | Does retrieval accuracy depend on where in the context the fact sits (0% to 100%)? | **Implemented** (`context_position`) |
 | 6 | Repeated-answer consistency | Does the model give consistent answers to equivalent questions asked repeatedly? | Planned |
 | 7 | False-premise handling | Does the model accept, challenge or invent around a false premise? | Planned |
 | 8 | Multilingual consistency | Is behavior consistent across English, Hindi, Spanish, French, German and Chinese, allowing for translation effects? | Planned |
 | 9 | Tool-use reliability | Does the model pick the right tool and arguments, in the right format? | Planned |
 | 10 | Model-version comparison | Do two versions differ on identical prompts? | **Implemented** (matched-design comparison; templates `version_comparison_a/b.yaml`) |
 
-Because only math (M) and stability (S) experiments exist, six of the eight fingerprint dimensions are shown as not measured.
+Four fingerprint dimensions can be measured today (M, S, I, C). Reasoning, factuality, hallucination indicators and tool use are shown as not measured, never as zero.
 
 ## Templates and the command line
 Templates live in `experiments/templates/*.yaml` (YAML mapping; `safe_load` only; unknown keys are rejected):

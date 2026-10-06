@@ -8,7 +8,7 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Experiment, ExperimentLineage, ExperimentRun, FailureMode, LLMModel, ModelVersion, Prompt
+from app.models import Experiment, ExperimentLineage, ExperimentRun, FailureMode, LLMModel, ModelVersion, Prompt, Response
 from app.schemas.failures import EvidenceOut, ExplainOut, ExplainStep, FailureOut, FollowUpSummary
 
 LIMITATIONS = [
@@ -19,20 +19,32 @@ LIMITATIONS = [
 ]
 
 
-async def failure_out(session: AsyncSession, fm: FailureMode) -> FailureOut:
-    run = await session.get(ExperimentRun, fm.run_id)
-    assert run is not None
-    exp = await session.get(Experiment, run.experiment_id)
-    assert exp is not None
-    prompt = (await session.execute(select(Prompt).where(Prompt.run_id == run.id))).scalar_one()
-    from app.models import Response
+async def failure_outs(session: AsyncSession, fms: list[FailureMode]) -> list[FailureOut]:
+    """Batch version: 4 queries total regardless of how many failures (the one-by-one version cost 4 per failure)."""
+    if not fms:
+        return []
+    run_ids = list({f.run_id for f in fms})
+    runs = {r.id: r for r in (await session.execute(select(ExperimentRun).where(ExperimentRun.id.in_(run_ids)))).scalars()}
+    exps = {e.id: e for e in (await session.execute(select(Experiment).where(
+        Experiment.id.in_({r.experiment_id for r in runs.values()})))).scalars()}
+    prompts = {p.run_id: p for p in (await session.execute(select(Prompt).where(Prompt.run_id.in_(run_ids)))).scalars()}
+    found = await session.execute(select(Response).where(Response.run_id.in_(run_ids)))
+    resps = {r.run_id: r for r in found.scalars()}
+    out = []
+    for fm in fms:
+        run = runs[fm.run_id]
+        exp = exps[run.experiment_id]
+        resp = resps.get(run.id)
+        out.append(FailureOut(
+            id=fm.id, run_id=run.id, experiment_id=exp.id, experiment_name=exp.name, label=fm.label, detector=fm.detector,
+            status=fm.status, details=fm.details, prompt=prompts[run.id].text, response=resp.text if resp else None,
+            expected_answer=prompts[run.id].expected_answer, is_demo_data=exp.is_demo_data,
+            can_follow_up=fm.detector == "paired_discordance"))
+    return out
 
-    resp = (await session.execute(select(Response).where(Response.run_id == run.id))).scalar_one_or_none()
-    return FailureOut(
-        id=fm.id, run_id=run.id, experiment_id=exp.id, experiment_name=exp.name, label=fm.label, detector=fm.detector,
-        status=fm.status, details=fm.details, prompt=prompt.text, response=resp.text if resp else None,
-        expected_answer=prompt.expected_answer, is_demo_data=exp.is_demo_data,
-        can_follow_up=fm.detector == "paired_discordance")
+
+async def failure_out(session: AsyncSession, fm: FailureMode) -> FailureOut:
+    return (await failure_outs(session, [fm]))[0]
 
 
 async def explain(session: AsyncSession, fm: FailureMode) -> ExplainOut:

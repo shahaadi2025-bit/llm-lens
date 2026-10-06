@@ -27,3 +27,5 @@ models_cache/
 .idea/
 .vscode/
 *.tsbuildinfo
+e2e/out/
+e2e/node_modules/

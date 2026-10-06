@@ -1,0 +1,15 @@
+# Does retrieval accuracy depend on where in a long context the fact sits?
+name: Context-position sensitivity
+task_type: context_position
+research_question: >-
+  Does the model's accuracy at retrieving a fact depend on where in a long context the fact is placed
+  (0%, 10%, 25%, 50%, 75%, 90%, 100%)?
+model: mock-deterministic-v1
+seed: 6
+repetitions: 1
+temperature: 0
+max_tokens: 32
+config:
+  size_tokens: 1500            # approximate; must fit the model's context window (checked, never attempted otherwise)
+  n_trials: 3                  # 7 positions x 3 trials = 21 runs
+  n_decoys: 2

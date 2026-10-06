@@ -52,11 +52,12 @@ async def _metric_out(session: AsyncSession, m: Metric) -> MetricOut:
 @router.get("/experiments/{experiment_id}/metrics", response_model=list[MetricOut])
 async def experiment_metrics(experiment_id: uuid.UUID, session: AsyncSession = Depends(get_session),
                              user: User | None = Depends(optional_user)) -> list[MetricOut]:
-    await get_visible(session, experiment_id, user)
+    exp = await get_visible(session, experiment_id, user)
     ms = list((await session.execute(select(Metric).where(Metric.experiment_id == experiment_id)
                                      .order_by(Metric.name))).scalars())
-    if not ms:  # e.g. finished before metrics existed: compute lazily, idempotently
-        ms = await compute_and_store_metrics(session, experiment_id)
+    finished = exp.status in (ExperimentStatus.COMPLETED.value, ExperimentStatus.FAILED.value, ExperimentStatus.CANCELLED.value)
+    if not ms and finished:  # finished before metrics existed: compute lazily. Never while running: the engine owns that write,
+        ms = await compute_and_store_metrics(session, experiment_id)  # and two concurrent writers could duplicate rows on PostgreSQL.
     return [await _metric_out(session, m) for m in ms]
 
 

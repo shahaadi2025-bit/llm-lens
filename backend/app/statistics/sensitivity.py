@@ -1,4 +1,5 @@
 """Analysis of one experiment where the same problems are asked in several forms (variants)."""
+import re
 from dataclasses import dataclass, field
 
 from app.statistics.effect_sizes import cohens_h
@@ -6,6 +7,11 @@ from app.statistics.paired_tests import cochran_q
 from app.statistics.proportions import Interval, wilson_interval
 
 MIN_BLOCKS_FOR_INFERENCE = 10
+
+
+def _natural(text: str) -> list[object]:
+    """Sort 'pos=10%' before 'pos=100%' (numbers compared as numbers), so position/length charts read left to right."""
+    return [int(p) if p.isdigit() else p for p in re.split(r"(\d+)", text)]
 
 
 @dataclass
@@ -35,7 +41,7 @@ def analyse(rows: list[tuple[str, str, bool]], level: float = 0.95) -> Sensitivi
     for group, block, passed in rows:
         by_group.setdefault(group, []).append(passed)
         cells.setdefault(block, {})[group] = passed
-    groups = {g: wilson_interval(sum(v), len(v), level) for g, v in sorted(by_group.items())}
+    groups = {g: wilson_interval(sum(v), len(v), level) for g, v in sorted(by_group.items(), key=lambda kv: _natural(kv[0]))}
     names = list(groups)
     complete = [b for b in cells.values() if all(g in b for g in names)]
 
